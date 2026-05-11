@@ -576,7 +576,7 @@ main().catch(err => {
     logger.error('\n❌ Configuration Error:\n');
     logger.error(err.message);
     logger.error('\n💡 To fix this issue, please run:');
-    logger.error('   aicw setup\n');
+    logger.error('   aicw-ai-mentions setup-api-key\n');
     process.exit(2); // Exit code 2 = MissingConfigError
   } else if (err instanceof PipelineCriticalError) {
     logger.error(`\n❌ Pipeline Error in ${err.stepName}:`);

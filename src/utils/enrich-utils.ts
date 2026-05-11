@@ -180,7 +180,7 @@ export function countMentionsOfValueInAnswer(
   let count = 0;
   let firstAppearanceOrder = -1;
   const excerpts: any[] = [];
-  const CONTEXT_CHARS = 100;
+  const CONTEXT_CHARS = 300;
 
   // Helper to calculate line and column from position
   const getLineAndColumn = (pos: number): { line: number; column: number } => {

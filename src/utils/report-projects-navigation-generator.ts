@@ -4,7 +4,7 @@ import { existsSync } from 'fs';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { USER_REPORTS_DIR, DEFAULT_INDEX_FILE, getProjectNameFromProjectFolder, getCurrentDateTimeAsString } from '../config/user-paths.js';
-import { replaceMacrosInTemplate, writeFileAtomic } from './misc-utils.js';
+import { replaceMacrosInTemplate, writeFileAtomic, loadCustomFooterCode } from './misc-utils.js';
 import { logger } from './compact-logger.js';
 import { NAVIGATION_TEMPLATES_DIR } from '../config/paths.js';
 
@@ -16,6 +16,29 @@ const __dirname = dirname(__filename);
 const NAV_META_FILE = '.navigation-meta.json';
 
 const DEFAULT_EMPTY_STATE = `<!-- No projects, empty state not needed -->`;
+
+// Category name to emoji mapping for visual distinction
+const CATEGORY_EMOJIS: Record<string, string> = {
+  'Accounting': '📊',
+  'AI Mention Tracking Tools': '🔍',
+  'AI Tools': '🤖',
+  'AI Tools for Marketers': '📣',
+  'Analytics and BI': '📈',
+  'Cloud Storage': '☁️',
+  'CRM Software': '👥',
+  'Customer Support': '🎧',
+  'Cybersecurity': '🔒',
+  'Design Tools': '🎨',
+  'Developer Tools': '🛠️',
+  'E-commerce': '🛒',
+  'Email Marketing': '📧',
+  'HR Software': '👔',
+  'Marketing Automation': '⚡',
+  'Open Sources Projects': '💻',
+  'Project Management': '📋',
+  'Video Conferencing': '📹',
+};
+const DEFAULT_EMOJI = '📊';
 
 interface NavigationMetadata {
   lastGenerated: string;
@@ -80,7 +103,7 @@ async function needsRegeneration(outputDir: string, projects?: string[]): Promis
     // Check specific projects if provided
     if (projects && projects.length > 0) {
       for (const project of projects) {
-        const projectDir = path.join(outputDir, 'projects', project);
+        const projectDir = path.join(outputDir, project);
         const currentMTime = await getDirectoryMTime(projectDir);
         const lastMTime = metadata.projectTimestamps[project] || 0;
 
@@ -91,18 +114,12 @@ async function needsRegeneration(outputDir: string, projects?: string[]): Promis
       return false; // No changes in specified projects
     }
 
-    // Check all projects
-    const projectsDir = path.join(outputDir, 'projects');
-    if (!existsSync(projectsDir)) {
-      return false; // No projects directory yet
-    }
-
-    const projectDirs = await fs.readdir(projectsDir, { withFileTypes: true });
+    // Check all projects (directories directly under outputDir)
+    const dirs = await fs.readdir(outputDir, { withFileTypes: true });
+    const projectDirs = dirs.filter(d => d.isDirectory() && !d.name.startsWith('.'));
 
     for (const dir of projectDirs) {
-      if (!dir.isDirectory()) continue;
-
-      const projectDir = path.join(projectsDir, dir.name);
+      const projectDir = path.join(outputDir, dir.name);
       const currentMTime = await getDirectoryMTime(projectDir);
       const lastMTime = metadata.projectTimestamps[dir.name] || 0;
 
@@ -122,101 +139,123 @@ async function needsRegeneration(outputDir: string, projects?: string[]): Promis
  */
 async function updateMetadata(outputDir: string): Promise<void> {
   const metaPath = path.join(outputDir, NAV_META_FILE);
-  const projectsDir = path.join(outputDir, 'projects');
 
   const metadata: NavigationMetadata = {
     lastGenerated: new Date().toISOString(),
     projectTimestamps: {}
   };
 
-  if (existsSync(projectsDir)) {
-    const projectDirs = await fs.readdir(projectsDir, { withFileTypes: true });
+  // Projects are directly under outputDir
+  const dirs = await fs.readdir(outputDir, { withFileTypes: true });
+  const projectDirs = dirs.filter(d => d.isDirectory() && !d.name.startsWith('.'));
 
-    for (const dir of projectDirs) {
-      if (!dir.isDirectory()) continue;
-
-      const projectDir = path.join(projectsDir, dir.name);
-      metadata.projectTimestamps[dir.name] = await getDirectoryMTime(projectDir);
-    }
+  for (const dir of projectDirs) {
+    const projectDir = path.join(outputDir, dir.name);
+    metadata.projectTimestamps[dir.name] = await getDirectoryMTime(projectDir);
   }
 
   await writeFileAtomic(metaPath, JSON.stringify(metadata, null, 2));
 }
 
 /**
+ * Get report stats from the report metadata or data file
+ */
+async function getReportStats(projectPath: string): Promise<{brands: number, domains: number}> {
+  try {
+    // Try report-meta.json first (new format)
+    const metaPath = path.join(projectPath, 'report-meta.json');
+    if (existsSync(metaPath)) {
+      const content = await fs.readFile(metaPath, 'utf-8');
+      const meta = JSON.parse(content);
+      return { brands: meta.brands || 0, domains: meta.domains || meta.sources || 0 };
+    }
+
+    // Fallback: try old data.js format for backwards compatibility
+    const files = await fs.readdir(projectPath);
+    const dataFile = files.find(f => f.match(/^\d{4}-\d{2}-\d{2}-data\.js$/));
+    if (!dataFile) return { brands: 0, domains: 0 };
+
+    const dataFilePath = path.join(projectPath, dataFile);
+    const content = await fs.readFile(dataFilePath, 'utf-8');
+    // Match both window.AppData and window.AppDataAggregate formats
+    const match = content.match(/window\.AppData[A-Za-z0-9]*\s*=\s*(\{[\s\S]*\});?\s*$/m);
+    if (match) {
+      const data = new Function(`return ${match[1]}`)();
+      // Try totalCounts first (older format), then count brands/links arrays
+      const brands = data.totalCounts?.products || data.brands?.length || 0;
+      const domains = data.linkDomains?.length || data.totalCounts?.linkDomains || data.totalCounts?.links || data.links?.length || 0;
+      return { brands, domains };
+    }
+  } catch {
+    // Report data not available
+  }
+  return { brands: 0, domains: 0 };
+}
+
+/**
  * Generate home page with projects directly
  */
 async function generateHomePageWithProjects(outputDir: string): Promise<void> {
-  const projectsDir = path.join(outputDir, 'projects');
-
-  // Ensure projects directory exists
-  await fs.mkdir(projectsDir, { recursive: true });
-
+  // Projects are now directly under outputDir (no /projects/ subfolder)
   const template = await loadNavigationTemplate('home');
-  let projectCards = '';
+  const customFooterCode = await loadCustomFooterCode('index-projects');
+  let projectRows = '';
+  let projectCount = 0;
+  const projectListItems: string[] = [];
 
   try {
-    const dirs = await fs.readdir(projectsDir, { withFileTypes: true });
+    const dirs = await fs.readdir(outputDir, { withFileTypes: true });
+    // Filter to project directories (exclude index.html, .navigation-meta.json, etc.)
     const projects = dirs
-      .filter(d => d.isDirectory())
+      .filter(d => d.isDirectory() && !d.name.startsWith('.'))
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    for (const project of projects) {
-      const projectPath = path.join(projectsDir, project.name);
-      const stats = await fs.stat(projectPath);
-      const formattedDate = new Date(stats.mtime).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
+    projectCount = projects.length;
 
-      // Find the latest report date for this project
-      let latestReportLink = `./projects/${project.name}/${DEFAULT_INDEX_FILE}`;
-      let hasReports = false;
-      try {
-        const projectDirs = await fs.readdir(projectPath, { withFileTypes: true });
-        const dateDirs = projectDirs
-          .filter(d => d.isDirectory() && /^\d{4}-\d{2}-\d{2}$/.test(d.name))
-          .map(d => d.name)
-          .sort()
-          .reverse(); // Most recent first
+    for (let i = 0; i < projects.length; i++) {
+      const project = projects[i];
+      const projectPath = path.join(outputDir, project.name);
 
-        // Find the first date that has a report
-        for (const dateDir of dateDirs) {
-          const reportPath = path.join(projectPath, dateDir, DEFAULT_INDEX_FILE);
-          if (existsSync(reportPath)) {
-            latestReportLink = `./projects/${project.name}/${dateDir}/${DEFAULT_INDEX_FILE}`;
-            hasReports = true;
-            break;
-          }
-        }
-      } catch {
-        // Error reading project directory, use default link
-      }
+      // Check if project has a report
+      const hasReport = existsSync(path.join(projectPath, DEFAULT_INDEX_FILE));
+      if (!hasReport) continue; // Skip projects without reports
 
-      const cardMacros = {
-        "{{PROJECT_NAME}}": getProjectNameFromProjectFolder(project.name),
-        "{{PROJECT_ID}}": project.name,
-        "{{LATEST_REPORT_LINK}}": latestReportLink,
-        "{{REPORT_DATE}}": formattedDate
-      };
+      const projectName = getProjectNameFromProjectFolder(project.name);
 
-      // Load the appropriate card template
-      let cardTemplate = '';
-      if(hasReports) {
-        cardTemplate = await loadNavigationTemplate('project-card-with-reports');
-        // adding report title to the card macros
-        cardMacros["{{REPORT_TITLE}}"] = project.name.replace(/_/g, ' ');
-      } else {
-        cardTemplate = await loadNavigationTemplate('project-card');
-      }
+      // Get report stats
+      const reportStats = await getReportStats(projectPath);
 
-      // Replace macros in the CARD template (not the home template!)
-      const filledCard = await replaceMacrosInTemplate(cardTemplate, cardMacros);      
+      // Generate compact card - link directly to project folder
+      const reportLink = `./${project.name}/index.html`;
+      const emoji = CATEGORY_EMOJIS[projectName] || DEFAULT_EMOJI;
+      projectRows += `
+<a href="${reportLink}" class="group block bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-lg transition-all duration-200 p-4">
+  <div class="flex items-center gap-3">
+    <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-200">
+      ${emoji}
+    </div>
+    <div class="flex-1 min-w-0">
+      <h3 class="font-semibold text-gray-900 dark:text-white text-sm truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">${projectName}</h3>
+      <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        <span class="flex items-center gap-1">
+          <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full"></span>
+          ${reportStats.brands} brands
+        </span>
+        <span class="flex items-center gap-1">
+          <span class="w-1.5 h-1.5 bg-purple-400 rounded-full"></span>
+          ${reportStats.domains} link domains
+        </span>
+      </div>
+    </div>
+    <svg class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+    </svg>
+  </div>
+</a>`;
 
-      // Now append the filled card
-      projectCards += filledCard;
-
+      // Build JSON-LD ItemList item with stats
+      const hasStats = reportStats.brands > 0 || reportStats.domains > 0;
+      projectListItems.push(`{"@type":"ListItem","position":${i + 1},"name":"${projectName.replace(/"/g, '\\"')}","url":"https://aicw.io/ranking/${encodeURIComponent(project.name)}/"${hasStats ? `,"description":"${reportStats.brands} brands tracked, ${reportStats.domains} link domains found"` : ''}}`);
     }
   } catch (err) {
     throw err
@@ -224,85 +263,19 @@ async function generateHomePageWithProjects(outputDir: string): Promise<void> {
 
   // Handle empty state
   let emptyState = DEFAULT_EMPTY_STATE;
-  if (!projectCards) {
+  if (!projectRows) {
     emptyState = await loadNavigationTemplate('empty-state');
   }
 
-  let html = await  replaceMacrosInTemplate(template, {
-    "{{PROJECT_CARDS}}": projectCards,
-    "{{EMPTY_STATE}}": emptyState
-  });    
+  let html = await replaceMacrosInTemplate(template, {
+    "{{PROJECT_ROWS}}": projectRows,
+    "{{PROJECT_COUNT}}": projectCount.toString(),
+    "{{PROJECT_LIST_ITEMS}}": projectListItems.join(','),
+    "{{EMPTY_STATE}}": emptyState,
+    "{{FOOTER_CUSTOM_CODE}}": customFooterCode
+  }, false);
 
   const outputPath = path.join(outputDir, 'index.html');
-  await writeFileAtomic(outputPath, html);
-}
-
-/**
- * Generate project detail page with date folders
- */
-async function generateProjectDetail(outputDir: string, projectName: string): Promise<void> {
-  const projectDir = path.join(outputDir, 'projects', projectName);
-
-  // Ensure project directory exists
-  await fs.mkdir(projectDir, { recursive: true });
-
-  const template = await loadNavigationTemplate('project-detail');
-  let dateEntries = '';
-
-  try {
-    const dirs = await fs.readdir(projectDir, { withFileTypes: true });
-    const dates = dirs
-      .filter(d => d.isDirectory() && /^\d{4}-\d{2}-\d{2}$/.test(d.name))
-      .map(d => d.name)
-      .sort()
-      .reverse(); // Most recent first
-
-    for (const date of dates) {
-      const datePath = path.join(projectDir, date);
-      const hasReport = existsSync(path.join(datePath, DEFAULT_INDEX_FILE));
-
-      if (hasReport) {
-        const formattedDate = new Date(date).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        });
-
-        dateEntries += `
-        <a href="./${date}/${DEFAULT_INDEX_FILE}" class="block p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-        <div class="flex items-center justify-between">
-            <div>
-              <h4 class="font-semibold text-gray-800 dark:text-white">${formattedDate}</h4>
-              <p class="text-sm text-gray-600 dark:text-gray-400">${date}</p>
-            </div>
-            <i class="fas fa-chevron-right text-gray-400"></i>
-          </div>
-        </a>`;
-      }
-    }
-  } catch {
-    // Error reading project directory
-  }
-
-  // Handle empty state
-  let emptyState = DEFAULT_EMPTY_STATE;
-  if (!dateEntries) {
-    emptyState = `
-    <div class="bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-lg p-6 text-center">
-      <i class="fas fa-exclamation-triangle text-4xl text-yellow-500 mb-3"></i>
-      <p class="text-gray-700 dark:text-gray-300">No reports found for this project</p>
-      <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">Run <code class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">aicw report ${projectName}</code> to generate a report</p>
-    </div>`;
-  }
-
-  let html = await replaceMacrosInTemplate(template, {
-    "{{PROJECT_NAME}}": getProjectNameFromProjectFolder(projectName),
-    "{{DATE_ENTRIES}}": dateEntries,
-    "{{EMPTY_STATE}}": emptyState
-  });    
-
-  const outputPath = path.join(projectDir, 'index.html');
   await writeFileAtomic(outputPath, html);
 }
 
@@ -327,25 +300,8 @@ export async function generateStaticNavigation(specificProjects?: string[]): Pro
 
   logger.info('Generating static navigation pages...');
 
-  // Generate home page with projects directly
+  // Generate home page with projects (projects are directly under outputDir)
   await generateHomePageWithProjects(outputDir);
-
-  const projectsDir = path.join(outputDir, 'projects');
-
-
-  if (existsSync(projectsDir)) {
-    const dirs = await fs.readdir(projectsDir, { withFileTypes: true });
-    const projects = dirs.filter(d => d.isDirectory()).map(d => d.name);
-
-    // Filter to specific projects if requested
-    const projectsToGenerate = specificProjects
-      ? projects.filter(p => specificProjects.includes(p))
-      : projects;
-
-    for (const project of projectsToGenerate) {
-      await generateProjectDetail(outputDir, project);
-    }
-  }
 
   // Update metadata
   await updateMetadata(outputDir);
@@ -357,13 +313,11 @@ export async function generateStaticNavigation(specificProjects?: string[]): Pro
  * Regenerate navigation for a specific project (called after report generation)
  */
 export async function generateProjectNavigation(projectName: string): Promise<void> {
-  const outputDir = path.join(USER_REPORTS_DIR, '');
+  const outputDir = USER_REPORTS_DIR;
+  const projectDir = path.join(outputDir, projectName);
 
-  // Regenerate home page (to update last modified date and project list)
+  // Regenerate home page (to update project list)
   await generateHomePageWithProjects(outputDir);
-
-  // Regenerate specific project detail page
-  await generateProjectDetail(outputDir, projectName);
 
   // Update metadata for this project
   const metaPath = path.join(outputDir, NAV_META_FILE);
@@ -372,7 +326,6 @@ export async function generateProjectNavigation(projectName: string): Promise<vo
       const metaContent = await fs.readFile(metaPath, 'utf-8');
       const metadata: NavigationMetadata = JSON.parse(metaContent);
 
-      const projectDir = path.join(outputDir, 'projects', projectName);
       metadata.projectTimestamps[projectName] = await getDirectoryMTime(projectDir);
       metadata.lastGenerated = new Date().toISOString();
 

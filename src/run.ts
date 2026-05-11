@@ -15,8 +15,15 @@ import { initializeUserDirectories } from './config/user-paths.js';
 import { PipelineCriticalError } from './utils/pipeline-errors.js';
 import { COLORS } from './utils/misc-utils.js';
 import { AICW_GITHUB_URL } from './config/constants.js';
-import { WaitForEnterMessageType, openInDefaultBrowser } from './utils/misc-utils.js';
+import { WaitForEnterMessageType } from './utils/misc-utils.js';
+import { getTargetDateArg, resolveCommandAlias } from './utils/cli-commands.js';
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
+const SUPPORTED_API_KEY_ENV_NAMES = [
+  'OPENROUTER_API_KEY',
+  'OPENAI_API_KEY',
+  'ANTHROPIC_API_KEY',
+  'PERPLEXITY_API_KEY',
+];
 
 function colorize(text: string, color: keyof typeof COLORS): string {
   return `${COLORS[color]}${text}${COLORS.reset}`;
@@ -88,7 +95,7 @@ function stopWebServer(): boolean {
 
 function printHeader(): void {
   const version = getCurrentVersion();
-  output.writeLine(colorize(`\n🤖 AI Chat Watch ${version} - https://aichatwatch.com/ `, 'bright'));
+  output.writeLine(colorize(`\n🤖 aicw-ai-mentions ${version} - https://github.com/aicw-io/aicw-ai-mentions `, 'bright'));
 
   // Show update notification if available
   const updateNotification = getUpdateNotification();
@@ -106,6 +113,11 @@ async function printHelp(): Promise<void> {
 
   // now also write the list of available pipelines
   output.writeLine(colorize('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'dim'));
+  output.writeLine(colorize('Common commands:\n', 'yellow'));
+  output.writeLine(`  ${colorize('aicw-ai-mentions scan "Stripe"', 'bright')} - create and run a perception scan`);
+  output.writeLine(`  ${colorize('aicw-ai-mentions serve', 'bright')} - open the local reports server`);
+  output.writeLine('');
+
   const allPipelines = getCliMenuItems(false);
   output.writeLine(colorize('Available pipelines:\n', 'yellow'));
   
@@ -124,7 +136,10 @@ async function printHelp(): Promise<void> {
     output.writeLine(colorize(`➡ ${category.toUpperCase()}:`, 'cyan'));
     for (const pipeline of pipelines) {
       output.writeLine(`  ${colorize(`[${pipeline.id}] ${pipeline.name} - ${pipeline.description}`, 'dim')}`);
-      output.writeLine(`  To run use: ${colorize(`aicw ${pipeline.id} <project-name>`, 'bright')}`);
+      const usage = pipeline.requiresProject
+        ? `aicw-ai-mentions ${pipeline.id} <project-name>`
+        : `aicw-ai-mentions ${pipeline.id}`;
+      output.writeLine(`  To run use: ${colorize(usage, 'bright')}`);
       output.writeLine('');
     }
   }
@@ -136,8 +151,7 @@ async function printHelp(): Promise<void> {
 
 async function printLicense(): Promise<void> {
   printHeader();
-  // output LICENSE.md file
-  const licensePath = path.join(getPackageRoot(), 'LICENSE.md');
+  const licensePath = path.join(getPackageRoot(), 'LICENSE');
   const licenseContent = readFileSync(licensePath, 'utf8');  // eslint-disable-line @typescript-eslint/no-unsafe-call
   output.writeLine(licenseContent);
 
@@ -146,23 +160,15 @@ async function printLicense(): Promise<void> {
   await waitForEnterInInteractiveMode(WaitForEnterMessageType.PRESS_ENTER_TO_THE_MENU, true);
 }
 
-async function showDemoReportsUrl(): Promise<void> {
-  printHeader();
-  // output LICENSE.md file
-  const demoReportsUrlPath = `https://aichatwatch.com/demo/reports/index.html`
-  output.writeLine(colorize('Explore Latest demo reports here:', 'dim'));
-  output.writeLine(`${colorize(demoReportsUrlPath, 'blue')}\n`);
-  await openInDefaultBrowser(demoReportsUrlPath);
-  await waitForEnterInInteractiveMode(WaitForEnterMessageType.PRESS_ENTER_TO_THE_MENU, true);
-}
 async function checkApiKeysArePresent(): Promise<boolean> {
   // Load environment to check API key
   await loadEnvFile();
-  const hasApiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
+  const hasApiKey = SUPPORTED_API_KEY_ENV_NAMES.some((key) => Boolean(process.env[key]));
 
   if (!hasApiKey) {
     output.writeLine('----!!!!!!!-------------------------');
-    output.writeLine(colorize('⚠️  No API keys were set! Please run "Setup: setup API Key" first and then try again.\n', 'red'));
+    output.writeLine(colorize('⚠️  No API keys were set! Please run "aicw-ai-mentions setup-api-key" first and then try again.', 'red'));
+    output.writeLine(colorize(`Supported environment keys: ${SUPPORTED_API_KEY_ENV_NAMES.join(', ')}\n`, 'dim'));
     output.writeLine('----!!!!!!!------------------------');
     return false;
   }  
@@ -270,7 +276,7 @@ async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boo
   if (isServerRunning()) {
     const serverPort = getServerPort() || 8080;
     output.writeLine(colorize('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'dim'));
-    output.writeLine(colorize('📍 Reports server running at: ', 'green') + colorize(`http://localhost:${serverPort}/`, 'bright'));
+    output.writeLine(colorize('📍 AI Mentions server running at: ', 'green') + colorize(`http://localhost:${serverPort}/`, 'bright'));
     output.writeLine(colorize('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'dim') + '\n');
   }
 
@@ -292,7 +298,7 @@ async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boo
           stopWebServer();
         }
         const version = getCurrentVersion();
-        output.writeLine(colorize(`\nBye! 👋 Thanks for using AI Chat Watch! ${version}`, 'green'));
+        output.writeLine(colorize(`\nBye! 👋 Thanks for using aicw-ai-mentions! ${version}`, 'green'));
         resolve(MenuState.EXIT);
         return;
       }
@@ -311,12 +317,6 @@ async function showInteractiveMenu(showHeader: boolean = true, showAdvanced: boo
 
           if (menuItem.id === 'license') {
             await printLicense();
-            resolve(MenuState.CONTINUE);
-            return;
-          }
-
-          if (menuItem.id === 'demo-reports') {
-            await showDemoReportsUrl();
             resolve(MenuState.CONTINUE);
             return;
           }
@@ -392,8 +392,56 @@ async function executePipelineForMenuItem(pipelineId: string, project?: string):
   }
 }
 
+function pipelineChainRequiresApiKeys(pipelineId: string, seen = new Set<string>()): boolean {
+  if (seen.has(pipelineId)) {
+    return false;
+  }
+
+  seen.add(pipelineId);
+  const pipeline = getPipeline(pipelineId);
+  if (!pipeline) {
+    return false;
+  }
+
+  return Boolean(
+    pipeline.requiresApiKeys ||
+    (pipeline.nextPipeline && pipelineChainRequiresApiKeys(pipeline.nextPipeline, seen))
+  );
+}
+
+async function executePipelineChain(
+  pipelineId: string,
+  executor: PipelineExecutor,
+  options: ExecutionOptions
+): Promise<ExecutionResult> {
+  let currentPipeline = getPipeline(pipelineId);
+  if (!currentPipeline) {
+    throw new Error(`Pipeline not found: ${pipelineId}`);
+  }
+
+  let result = await executor.execute(currentPipeline.id, options);
+
+  while (result.success && currentPipeline.nextPipeline) {
+    const nextPipeline = getPipeline(currentPipeline.nextPipeline);
+    if (!nextPipeline) {
+      throw new Error(`Pipeline not found: ${currentPipeline.nextPipeline}`);
+    }
+
+    output.writeLine(colorize(`\n→ Continuing with ${nextPipeline.name}`, 'green'));
+    output.writeLine(colorize(`📋 ${nextPipeline.description}\n`, 'dim'));
+
+    result = await executor.execute(nextPipeline.id, options);
+    currentPipeline = nextPipeline;
+  }
+
+  return result;
+}
+
 // Main menu loop - runs continuously until user chooses to exit
 async function runMenuLoop(showAdvanced: boolean = false): Promise<void> {
+  // Load encrypted credentials into process.env before showing menu
+  await loadEnvFile();
+
   let currentState = MenuState.MAIN;
   let isFirstRun = true;
 
@@ -427,8 +475,8 @@ async function runMenuLoop(showAdvanced: boolean = false): Promise<void> {
 function showNpxWelcomeIfNeeded(): void {
   if (process.env.AICW_RUNNING_VIA_NPX === 'true') {
     output.writeLine('');
-    output.writeLine(colorize('💡 Thanks for trying AICW!', 'cyan'));
-    output.writeLine(colorize('   To install globally: npm install -g @aichatwatch/aicw', 'dim'));
+    output.writeLine(colorize('💡 Thanks for trying aicw-ai-mentions!', 'cyan'));
+    output.writeLine(colorize('   To install globally: npm install -g aicw-ai-mentions', 'dim'));
     output.writeLine('');
   }
 }
@@ -494,15 +542,8 @@ async function main(): Promise<void> {
   }
   // Load environment variables before checking environment
   await loadEnvFile();
-  // Map command aliases
-  const commandAliases: Record<string, string> = {
-    'u': 'update',
-    '-v': 'version',
-    '--version': 'version'
-  };
-  
   // Resolve command alias
-  const resolvedCommand = commandAliases[command] || command;
+  const resolvedCommand = resolveCommandAlias(command);
 
   // Check if command is a pipeline
   const pipeline = getPipeline(resolvedCommand);
@@ -512,24 +553,26 @@ async function main(): Promise<void> {
     output.writeLine(colorize(`📋 ${pipeline.description}\n`, 'dim'));
 
     // Extract --date argument if provided and pass it via environment variable
-    const dateIndex = args.indexOf('--date');
-    const targetDate = dateIndex !== -1 && args[dateIndex + 1] ? args[dateIndex + 1] : undefined;
+    const targetDate = getTargetDateArg(args);
 
     const executorOptions: ExecutionOptions = {  };
     if (targetDate) {
       executorOptions.env = { AICW_TARGET_DATE: targetDate };
     }
+    if (pipeline.id === 'new') {
+      executorOptions.actionArgs = { 'project-new': args };
+    }
 
     // for command line mode before executing a pipeline always check for api keys
     // check if requried API keys are set
-    if (pipeline.requiresApiKeys && !await checkApiKeysArePresent()) {
-      console.error(colorize(`\n✗ Oops! API keys are not set. Please run "aicw setup" to set the API keys.`, 'red'));
-      console.error(colorize(`Try "aicw help" to see what I can do.`, 'dim'));
+    if (pipelineChainRequiresApiKeys(pipeline.id) && !await checkApiKeysArePresent()) {
+      console.error(colorize(`\n✗ Oops! API keys are not set. Please run "aicw-ai-mentions setup-api-key" to set the API keys.`, 'red'));
+      console.error(colorize(`Try "aicw-ai-mentions help" to see what I can do.`, 'dim'));
       process.exit(1);
     }
 
     const executor = new PipelineExecutor(project);
-    const result = await executor.execute(pipeline.id, executorOptions);
+    const result = await executePipelineChain(pipeline.id, executor, executorOptions);
     showNpxWelcomeIfNeeded();
     process.exit(result.success ? 0 : 1);
   }
@@ -538,7 +581,7 @@ async function main(): Promise<void> {
   switch (resolvedCommand) {
     default:
       console.error(colorize(`\n✗ Oops! I don't know the command or a pipeline "${command}"`, 'red'));
-      console.error(colorize(`Try "aicw help" to see what I can do.`, 'dim'));
+      console.error(colorize(`Try "aicw-ai-mentions help" to see what I can do.`, 'dim'));
       process.exit(1);
   }
 }

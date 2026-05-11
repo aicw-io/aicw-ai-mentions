@@ -82,6 +82,42 @@ function deduplicateSources(sources: EntitySource[]): EntitySource[] {
   return result;
 }
 
+function getLinkValue(link: unknown): string {
+  if (typeof link === 'string') return link;
+  if (Array.isArray(link) && link.length > 0) return String(link[0] || '');
+  if (link && typeof link === 'object') {
+    const item = link as Record<string, unknown>;
+    if (typeof item.link === 'string' && item.link.trim()) return item.link;
+    if (typeof item.value === 'string' && item.value.trim()) return item.value;
+  }
+  return '';
+}
+
+function getVerifiedSourceUrls(data: Record<string, unknown>): Set<string> {
+  const verified = new Set<string>();
+  const links = Array.isArray(data.links) ? data.links : [];
+
+  for (const link of links) {
+    const value = getLinkValue(link);
+    if (value) {
+      verified.add(cleanUrl(value));
+    }
+  }
+
+  return verified;
+}
+
+function filterSourcesToVerifiedLinks(
+  sources: EntitySource[],
+  verifiedSourceUrls: Set<string>
+): EntitySource[] {
+  if (verifiedSourceUrls.size === 0) {
+    return sources;
+  }
+
+  return sources.filter(source => verifiedSourceUrls.has(cleanUrl(source.url)));
+}
+
 /**
  * Distance check result with details
  */
@@ -464,7 +500,7 @@ function findLinksAtSentenceStart(
       const startsWithUrl = /^\s*(https?:\/\/|www\.|[a-z0-9][-a-z0-9]*\.[a-z]{2,})/i.test(sentence);
 
       if (startsWithUrl) {
-        // Extract all link types using proven extraction function
+        // Extract all markdown and plain URL formats using proven extraction function
         const links = extractLinksFromContent(sentence);
 
         for (const link of links) {
@@ -490,7 +526,7 @@ function findLinksAtSentenceStart(
         const startsWithUrl = /^\s*(https?:\/\/|www\.|[a-z0-9][-a-z0-9]*\.[a-z]{2,})/i.test(sentence);
 
         if (startsWithUrl) {
-          // Extract all link types using proven extraction function
+          // Extract all markdown and plain URL formats using proven extraction function
           const links = extractLinksFromContent(sentence);
 
           for (const link of links) {
@@ -725,8 +761,8 @@ export async function enrichGetSourceLinksForEntities(
 ): Promise<void> {
   logger.info(`Extracting source links for entities in project: ${project} (date: ${targetDate})`);
 
-  // Non-computed sections to process
-  const NON_COMPUTED_SECTIONS = ['products', 'organizations', 'persons', 'keywords', 'places', 'events', 'links'];
+  // Non-computed sections to process (brands is the new unified section, others kept for backward compatibility)
+  const NON_COMPUTED_SECTIONS = ['brands', 'products', 'organizations', 'persons', 'keywords', 'places', 'events', 'links'];
 
   // Read all question directories (including _all-questions-combined)
   const questionsDir = QUESTIONS_DIR(project);
@@ -763,6 +799,7 @@ export async function enrichGetSourceLinksForEntities(
     try {
       // Load compiled data
       const { data, dataKey } = await loadDataJs(compiledFile);
+      const verifiedSourceUrls = getVerifiedSourceUrls(data);
 
       // Variables for previous dates scanning
       let previousDates: string[] | null = null;
@@ -930,7 +967,10 @@ export async function enrichGetSourceLinksForEntities(
           }
 
           // Deduplicate by (url + bots) combination
-          item.sources = deduplicateSources(allSources);
+          item.sources = filterSourcesToVerifiedLinks(
+            deduplicateSources(allSources),
+            verifiedSourceUrls
+          );
 
           if (item.sources.length > 0) {
             totalEntitiesProcessed++;

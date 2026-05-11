@@ -1,7 +1,0 @@
-Social Media: Threads
-order: 4
-description:Text-based social media platform by Meta, integrated with Instagram
-
-threads.net
-instagram.com/threads
-threads.instagram.com

@@ -1,26 +1,16 @@
 {
-    "name": "AI Chat Models with Search",
-    "description": "Major AIs with search (GPT4-o,Sonnet4,Perplexity Sonar)(paid)+o4mini for analysis(paid)",
-    "models": {
-        "get_answer": [
-            "perplexity_with_search_latest",
-            "anthropic_claude_with_search_latest",
-            "openai_chatgpt_with_search_latest"
-        ],
-        "extract_entities": [
-            "or_openai_gpt_4o_mini"
-        ],
-        "get_link_type": [
-            "or_openai_gpt_4o_mini"
-        ],
-        "generate-links-for-entities": [
-            "or_openai_gpt_4o_mini"
-        ],
-        "generate_similar_for_entities": [
-            "or_openai_gpt_4o_mini"
-        ],
-        "generate_summary": [
-            "or_openai_gpt_4o_mini"
-        ]
-    }
+  "name": "AI Chat Models with Search",
+  "description": "Major AIs with search (ChatGPT,Claude,Gemini,Grok,Perplexity Sonar)",
+  "models": {
+    "get_answer": [
+      "perplexity_with_search_latest",
+      "anthropic_claude_with_search_latest",
+      "openai_chatgpt_with_search_latest",
+      "google_gemini_with_search_latest",
+      "x_ai_grok_with_search_latest"
+    ],
+    "extract_entities": [
+      "or_openai_gpt_4o_mini"
+    ]
+  }
 }

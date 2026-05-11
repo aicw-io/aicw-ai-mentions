@@ -3,119 +3,169 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- all projects navigation -->
-  <title>AI Chat Watch - Projects</title>
+  <!-- Primary Meta -->
+  <meta name="description" content="AICW AI Mentions shows which companies, products, people, links, and link domains AI assistants mention for each scan.">
+  <meta name="keywords" content="AI monitoring, brand tracking, ChatGPT mentions, AI mentions, LLM monitoring">
+  <meta name="author" content="AICW AI Mentions">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <link rel="canonical" href="https://aicw.io/ranking/">
+  <!-- Favicon -->
+  <link rel="icon" href="https://www.aicw.io/favicon.svg" type="image/svg+xml">
+  <!-- Open Graph -->
+  <meta property="og:title" content="AICW AI Mentions">
+  <meta property="og:description" content="Static reports for mentions, links, and link domains found in AI assistant responses.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://aicw.io/ranking/">
+  <meta property="og:site_name" content="AICW AI Mentions">
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="AICW AI Mentions">
+  <meta name="twitter:description" content="Mentions, links, and link domains found in AI assistant responses">
+  <title>AICW AI Mentions</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script>
-    // Apply dark mode from localStorage before page renders
     if (localStorage.getItem('aicwDarkMode') === 'true') {
       document.documentElement.classList.add('dark');
     }
+  </script>
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "AICW AI Mentions",
+    "url": "https://aicw.io",
+    "sameAs": ["https://aicw.io"]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "AICW AI Mentions",
+    "url": "https://aicw.io",
+    "description": "Monitor AI chatbot responses and track brand mentions across ChatGPT, Claude, Gemini and more"
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "AICW AI Mentions",
+    "description": "Mentions, links, and link domains found in AI assistant responses by project",
+    "url": "https://aicw.io/ranking/",
+    "isPartOf": {"@type": "WebSite", "name": "AICW AI Mentions", "url": "https://aicw.io"}
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "AICW AI Mentions Reports",
+    "description": "Static AI mention reports by project",
+    "numberOfItems": {{PROJECT_COUNT}},
+    "itemListElement": [{{PROJECT_LIST_ITEMS}}]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "AICW AI Mentions",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "macOS, Linux, Windows",
+    "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}
+  }
+]
   </script>
   <style>
     .gradient-bg {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
-    .card-hover {
-      transition: all 0.3s ease;
+    /* Card entrance animation */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    .card-hover:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    .grid > a {
+      animation: fadeInUp 0.3s ease-out forwards;
+      opacity: 0;
     }
-    @media (max-width: 640px) {
-      .card-hover:hover {
-        transform: none;
-      }
-    }
+    .grid > a:nth-child(1) { animation-delay: 0.02s; }
+    .grid > a:nth-child(2) { animation-delay: 0.04s; }
+    .grid > a:nth-child(3) { animation-delay: 0.06s; }
+    .grid > a:nth-child(4) { animation-delay: 0.08s; }
+    .grid > a:nth-child(5) { animation-delay: 0.1s; }
+    .grid > a:nth-child(6) { animation-delay: 0.12s; }
+    .grid > a:nth-child(7) { animation-delay: 0.14s; }
+    .grid > a:nth-child(8) { animation-delay: 0.16s; }
+    .grid > a:nth-child(9) { animation-delay: 0.18s; }
+    .grid > a:nth-child(n+10) { animation-delay: 0.2s; }
   </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900">
   <!-- Header -->
   <header class="gradient-bg text-white shadow-lg">
-    <div class="container mx-auto px-4 py-4">
+    <div class="container mx-auto px-4 py-3">
       <div class="flex items-center justify-between">
-        <a href="/" class="flex items-center space-x-3 hover:opacity-90 transition-opacity">
-          <i class="fas fa-robot text-2xl"></i>
-          <div>
-            <h1 class="text-xl md:text-2xl font-bold">AI Chat Watch</h1>
-            <p class="text-xs md:text-sm opacity-90 hidden sm:block">Monitor AI responses</p>
-          </div>
+        <a href="https://www.aicw.io/aicw-ai-mentions" class="flex flex-col leading-none hover:opacity-90 transition-opacity">
+          <span class="text-xl md:text-2xl font-bold tracking-tight">AICW AI Mentions</span>
         </a>
 
         <!-- Mobile menu button -->
         <button id="mobileMenuBtn" class="md:hidden p-2 rounded hover:bg-white/10">
-          <i class="fas fa-bars text-xl"></i>
+          <i class="fas fa-bars text-lg"></i>
         </button>
 
         <!-- Desktop navigation -->
-        <nav class="hidden md:flex items-center space-x-4">
-          <a href="https://aichatwatch.com" target="_blank" class="hover:text-gray-200 flex items-center px-3 py-1 rounded hover:bg-white/10">
-            <i class="fas fa-globe mr-2"></i>
+        <nav class="hidden md:flex items-center space-x-3 text-sm">
+          <a href="https://www.aicw.io/aicw-ai-mentions" target="_blank" class="hover:text-gray-200 flex items-center px-2 py-1 rounded hover:bg-white/10">
+            <i class="fas fa-globe mr-1"></i>
             <span>Website</span>
           </a>
-          <a href="https://github.com/aichatwatch/aicw" target="_blank" class="hover:text-gray-200 flex items-center px-3 py-1 rounded hover:bg-white/10">
-            <i class="fa-brands fa-github mr-2"></i>
-            <span>Source Code</span>
+          <a href="https://www.aicw.io/aicw-ai-mentions?utm_source=public_reports&utm_medium=header" target="_blank"
+             class="hover:text-gray-200 flex items-center px-2 py-1 rounded hover:bg-white/10 font-semibold">
+            AICW.io
           </a>
-          <a href="https://aichatwatch.com/schedule" target="_blank" class="block py-2 hover:bg-white/10 rounded px-3">
-            <i class="fa-solid fa-calendar-check mr-2"></i>Schedule a Report
-          </a>             
         </nav>
       </div>
 
       <!-- Mobile navigation (hidden by default) -->
-      <nav id="mobileMenu" class="md:hidden hidden mt-4 pt-4 border-t border-white/20">
-        <a href="https://aichatwatch.com" target="_blank" class="block py-2 hover:bg-white/10 rounded px-3 mb-1">
+      <nav id="mobileMenu" class="md:hidden hidden mt-3 pt-3 border-t border-white/20 text-sm">
+        <a href="https://www.aicw.io/aicw-ai-mentions" target="_blank" class="block py-2 hover:bg-white/10 rounded px-2 mb-1">
           <i class="fas fa-globe mr-2"></i>Website
         </a>
-        <a href="https://github.com/aichatwatch/aicw" target="_blank" class="block py-2 hover:bg-white/10 rounded px-3">
-          <i class="fa-brands fa-github mr-2"></i>Source Code
+        <a href="https://www.aicw.io/aicw-ai-mentions?utm_source=public_reports&utm_medium=header" target="_blank"
+           class="block py-2 hover:bg-white/10 rounded px-2 mb-1 font-semibold">
+          AICW.io
         </a>
-        <a href="https://aichatwatch.com/schedule" target="_blank" class="block py-2 hover:bg-white/10 rounded px-3">
-          <i class="fa-solid fa-calendar-check mr-2"></i>Schedule a Report
-        </a>        
       </nav>
     </div>
   </header>
 
   <!-- Main Content -->
-  <main class="container mx-auto px-4 py-6 md:py-8">
-    <div class="mb-6">
-      <h2 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-1">Projects</h2>
-      <p class="text-sm md:text-base text-gray-600 dark:text-gray-400">Browse AI mentions tracking projects and reports</p>
+  <main class="container mx-auto px-4 py-4 md:py-6">
+    <div class="mb-4">
+      <h2 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">AICW AI Mentions</h2>
+      <p class="text-xs md:text-sm text-gray-600 dark:text-gray-400">Static reports for AI mentions, links, and link domains by project</p>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-      {{PROJECT_CARDS}}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      {{PROJECT_ROWS}}
     </div>
-
     {{EMPTY_STATE}}
+
   </main>
 
   <!-- Footer -->
-  <footer class="bg-gray-800 text-white mt-16">
-    <div class="container mx-auto px-4 py-6">
-      <div class="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
-        <div class="text-center sm:text-left">
-          <p class="text-sm opacity-75">AI Chat Watch © {{YEAR}}</p>
-        </div>
-        <div class="text-center sm:text-right">
-          <p class="text-xs opacity-50">{{GENERATION_TIME}}</p>
-        </div>
+  <footer class="bg-gray-800 text-white mt-8">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex flex-col sm:flex-row justify-between items-center text-xs space-y-1 sm:space-y-0">
+        <p class="opacity-75">AICW AI Mentions © {{YEAR}}</p>
+        <p class="opacity-50">{{GENERATION_TIME}}</p>
       </div>
     </div>
   </footer>
 
   <script>
-    // Mobile menu toggle
     document.getElementById('mobileMenuBtn').addEventListener('click', function() {
       const menu = document.getElementById('mobileMenu');
       const icon = this.querySelector('i');
-
       menu.classList.toggle('hidden');
-
       if (menu.classList.contains('hidden')) {
         icon.classList.remove('fa-times');
         icon.classList.add('fa-bars');
@@ -125,5 +175,6 @@
       }
     });
   </script>
+{{FOOTER_CUSTOM_CODE}}
 </body>
 </html>

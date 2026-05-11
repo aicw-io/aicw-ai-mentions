@@ -312,7 +312,7 @@ async function saveAllCredentials(credentials: Record<string, string>): Promise<
   // Set secure file permissions (readable/writable by owner only)
   await fs.chmod(credentialsPath, 0o600);
 
-  logger.info(`\nAPI keys securely encrypted and saved to:\n${credentialsPath}`);
+  logger.info(`\nAPI keys saved to local credentials file:\n${credentialsPath}`);
 }
 
 // ============================================================================
@@ -320,7 +320,7 @@ async function saveAllCredentials(credentials: Record<string, string>): Promise<
 // ============================================================================
 
 async function main() {
-  console.log(colorize('\n🔧 AI Chat Watch - API Key Setup', 'bright'));
+  console.log(colorize('\n🔧 aicw-ai-mentions - API Key Setup', 'bright'));
   console.log(colorize('━'.repeat(50), 'dim'));
 
   try {
@@ -367,7 +367,7 @@ async function main() {
     // 4. Save all credentials if there were changes
     if (hasChanges) {
       await saveAllCredentials(updatedCreds);
-      logger.success('Setup complete! All API keys saved and encrypted.');
+      logger.success('Setup complete! All API keys saved locally.');
     } else {
       logger.success('Setup complete, run it again to add new keys or change existing.');
     }

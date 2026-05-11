@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO Meta Tags -->
+    <title>{{REPORT_TITLE}} | AICW AI Mentions</title>
+    <meta name="description" content="AI mentions report for {{PROJECT_NAME}}: {{ENTITY_COUNT}} mentions detected across {{BOT_COUNT}} AI models including ChatGPT, Gemini, Claude, Perplexity.">
+    <meta name="keywords" content="AI mentions, AI recommendations, brand visibility, ChatGPT mentions, Gemini, Claude, Perplexity, aicw-ai-mentions">
+    <meta name="author" content="AICW AI Mentions">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="{{REPORT_TITLE}} | AICW AI Mentions">
+    <meta property="og:description" content="{{ENTITY_COUNT}} mentions detected across {{BOT_COUNT}} AI models. View share of voice, cited links, and link domains.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="{{CANONICAL_URL}}">
+    <meta property="og:site_name" content="AICW AI Mentions">
+    <meta property="og:locale" content="en_US">
+    <meta property="article:published_time" content="{{REPORT_DATE_ISO}}">
+    <meta property="article:author" content="AICW AI Mentions">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{REPORT_TITLE}} | AICW AI Mentions">
+    <meta name="twitter:description" content="{{ENTITY_COUNT}} mentions detected across {{BOT_COUNT}} AI models.">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{{CANONICAL_URL}}">
+
+    <!-- Favicon -->
+    <link rel="icon" href="https://www.aicw.io/favicon.svg" type="image/svg+xml">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+{{JSON_LD_DATA}}
+    </script>
+
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Load Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4f46e5',
+                        secondary: '#3b82f6',
+                    },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        /* CSS Variables for Theme Colors */
+        :root {
+            --primary-color: #4f46e5;
+            --secondary-color: #3b82f6;
+            --background-color: #ffffff;
+            --text-color: #333333;
+            --surface-raised-color: #ffffff;
+            --surface-muted-color: #f8fafc;
+            --surface-border-color: #e2e8f0;
+            --table-header-bg: #f8fafc;
+            --table-header-text: #1f2937;
+            --table-body-text: #1f2937;
+            --table-stripe-bg: #f8fafc;
+            --table-hover-bg: #eef2ff;
+        }
+
+        html.dark {
+            --background-color: #1a1a1a;
+            --text-color: #e2e8f0;
+            --surface-raised-color: #111827;
+            --surface-muted-color: #1f2937;
+            --surface-border-color: #334155;
+            --table-header-bg: #1f2937;
+            --table-header-text: #e2e8f0;
+            --table-body-text: #e5e7eb;
+            --table-stripe-bg: rgba(148, 163, 184, 0.08);
+            --table-hover-bg: rgba(148, 163, 184, 0.14);
+        }
+
+        body {
+            color: var(--text-color);
+            background-color: var(--background-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        a {
+            color: var(--secondary-color) !important;
+            transition: color 0.3s ease;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Metric card styles */
+        .metric-card {
+            background-color: var(--surface-raised-color);
+            border: 1px solid var(--surface-border-color);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-card-clickable {
+            cursor: pointer;
+        }
+
+        .metric-card-clickable:hover {
+            border-color: var(--primary-color);
+        }
+
+        .metric-icon {
+            font-size: 0.875rem;
+            color: var(--primary-color);
+            opacity: 0.7;
+            margin-bottom: 0.125rem;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-color);
+            opacity: 0.8;
+            margin-top: 0.125rem;
+        }
+
+        /* Table styles */
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            min-width: 820px;
+            background-color: var(--surface-raised-color);
+            color: var(--table-body-text);
+            border: 1px solid var(--surface-border-color);
+        }
+
+        table th {
+            background-color: var(--table-header-bg) !important;
+            color: var(--table-header-text) !important;
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--surface-border-color);
+            white-space: nowrap;
+        }
+
+        table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--surface-border-color);
+            color: var(--table-body-text);
+            white-space: nowrap;
+        }
+
+        table tbody tr:nth-child(even) {
+            background-color: var(--table-stripe-bg);
+        }
+
+        table tbody tr:hover {
+            background-color: var(--table-hover-bg);
+        }
+
+        table a {
+            white-space: nowrap;
+        }
+
+        /* Bot icon styles */
+        .icon_bot {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 10px;
+            color: white;
+        }
+
+        .icon_bot_google_gemini { background: linear-gradient(135deg, #4285f4, #34a853); }
+        .icon_bot_perplexity_ai { background: linear-gradient(135deg, #000000, #333333); }
+        .icon_bot_brave_search { background: linear-gradient(135deg, #fb542b, #ff7a59); }
+        .icon_bot_you_com { background: linear-gradient(135deg, #2c2c2c, #454545); }
+        .icon_bot_openai_searchgpt { background: linear-gradient(135deg, #74aa9c, #9ec1b9); }
+        .icon_bot_unknown { background: linear-gradient(135deg, #808080, #A9A9A9); }
+
+        /* Section header styles */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .section-header h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .section-header i {
+            color: var(--primary-color);
+        }
+
+        /* Questions list styles */
+        .question-hidden {
+            display: none;
+        }
+
+        .show-all-questions .question-hidden {
+            display: flex;
+        }
+
+        /* Dark mode toggle button */
+        .dark-mode-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #1f2937;
+        }
+
+        html.dark .dark-mode-toggle {
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+        }
+
+        .dark-mode-toggle:hover {
+            transform: scale(1.05);
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        html.dark .dark-mode-toggle:hover {
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Influence gauge */
+        .influence-gauge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .influence-bar {
+            width: 60px;
+            height: 8px;
+            background-color: var(--surface-border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .influence-fill {
+            height: 100%;
+            background-color: var(--secondary-color);
+            border-radius: 4px;
+        }
+
+        /* Type badge styles */
+        .type-badge {
+            display: inline-block;
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.625rem;
+            font-weight: 600;
+            text-transform: capitalize;
+            background-color: #e0e7ff;
+            color: #3730a3;
+        }
+
+        html.dark .type-badge {
+            background-color: #312e81;
+            color: #c7d2fe;
+        }
+
+        /* Header styles */
+        header {
+            background: linear-gradient(to right, #f0f4ff, #e0e7ff);
+            transition: background 0.3s ease;
+        }
+
+        html.dark header {
+            background: linear-gradient(to right, #1a1a2e, #16213e);
+        }
+
+        .header-text {
+            color: #000000;
+        }
+
+        html.dark .header-text {
+            color: #ffffff;
+        }
+
+        /* Tab styles */
+        .tab-btn {
+            transition: all 0.2s ease;
+        }
+        .tab-btn.active {
+            border-bottom: 2px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+        .tab-btn:not(.active) {
+            border-bottom: 2px solid transparent;
+            color: #6b7280;
+        }
+        html.dark .tab-btn:not(.active) {
+            color: #9ca3af;
+        }
+        .tab-btn:hover:not(.active) {
+            color: var(--text-color);
+        }
+
+        /* Sortable table styles */
+        table.sortable th {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-right: 1.5rem;
+        }
+        table.sortable th:hover {
+            background-color: var(--table-hover-bg) !important;
+        }
+        table.sortable th::after {
+            content: '⇅';
+            position: absolute;
+            right: 0.5rem;
+            opacity: 0.3;
+            font-size: 0.75rem;
+        }
+        table.sortable th.sort-asc::after {
+            content: '↑';
+            opacity: 1;
+        }
+        table.sortable th.sort-desc::after {
+            content: '↓';
+            opacity: 1;
+        }
+
+        /* Print styles */
+        @media print {
+            .dark-mode-toggle,
+            .no-print {
+                display: none !important;
+            }
+        }
+
+        /* Questions Modal */
+        .questions-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .questions-modal-overlay.active {
+            display: flex;
+        }
+        .questions-modal {
+            background: var(--surface-raised-color);
+            border-radius: 0.75rem;
+            max-width: 600px;
+            max-height: 80vh;
+            width: 90%;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        .questions-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--surface-border-color);
+        }
+        .questions-modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: calc(80vh - 60px);
+        }
+        .questions-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-color);
+            opacity: 0.6;
+        }
+        .questions-modal-close:hover {
+            opacity: 1;
+        }
+        .answer-modal {
+            max-width: 820px;
+        }
+        .answer-response-list {
+            display: grid;
+            gap: 1rem;
+        }
+        .answer-response-card {
+            border: 1px solid var(--surface-border-color);
+            border-radius: 0.5rem;
+            background: var(--surface-color);
+            padding: 1rem;
+        }
+        .answer-response-question {
+            font-weight: 700;
+            color: var(--text-color);
+            margin-bottom: 0.75rem;
+        }
+        .answer-response-text {
+            white-space: pre-wrap;
+            line-height: 1.65;
+            color: var(--text-color);
+        }
+        .answer-response-tabs {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem;
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--surface-border-color);
+            border-radius: 0.5rem;
+            background: var(--surface-muted-color);
+        }
+        .answer-tab-button {
+            border: 0;
+            border-radius: 0.375rem;
+            padding: 0.35rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-color);
+            background: transparent;
+            cursor: pointer;
+        }
+        .answer-tab-button.active {
+            color: #ffffff;
+            background: var(--primary-color);
+        }
+        .answer-response-markdown {
+            line-height: 1.7;
+            color: var(--text-color);
+        }
+        .answer-response-markdown > * + * {
+            margin-top: 0.75rem;
+        }
+        .answer-response-markdown ul,
+        .answer-response-markdown ol {
+            margin-left: 1.25rem;
+            padding-left: 1rem;
+        }
+        .answer-response-markdown ul {
+            list-style: disc;
+        }
+        .answer-response-markdown ol {
+            list-style: decimal;
+        }
+        .answer-response-markdown code {
+            padding: 0.1rem 0.25rem;
+            border-radius: 0.25rem;
+            background: var(--surface-muted-color);
+            font-size: 0.9em;
+        }
+        .answer-response-markdown pre,
+        .answer-response-code {
+            overflow-x: auto;
+            white-space: pre-wrap;
+            border: 1px solid var(--surface-border-color);
+            border-radius: 0.5rem;
+            background: var(--surface-muted-color);
+            padding: 1rem;
+            line-height: 1.55;
+            font-size: 0.875rem;
+            color: var(--text-color);
+        }
+        .answer-response-markdown a {
+            overflow-wrap: anywhere;
+        }
+        .icon-bot-deck-static {
+            display: inline-flex;
+            align-items: center;
+            padding-left: 0;
+        }
+        .icon-bot-deck-static img,
+        .icon-bot-deck-static .icon_bot {
+            width: 22px;
+            height: 22px;
+            border: 2px solid #ffffff;
+            border-radius: 6px;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.16);
+            margin-left: -7px;
+            position: relative;
+        }
+        .icon-bot-deck-static img:first-child,
+        .icon-bot-deck-static .icon_bot:first-child {
+            margin-left: 0;
+        }
+        .icon-bot-deck-static img:nth-child(1),
+        .icon-bot-deck-static .icon_bot:nth-child(1) { z-index: 20; }
+        .icon-bot-deck-static img:nth-child(2),
+        .icon-bot-deck-static .icon_bot:nth-child(2) { z-index: 19; }
+        .icon-bot-deck-static img:nth-child(3),
+        .icon-bot-deck-static .icon_bot:nth-child(3) { z-index: 18; }
+        .icon-bot-deck-static img:nth-child(4),
+        .icon-bot-deck-static .icon_bot:nth-child(4) { z-index: 17; }
+        .icon-bot-deck-static img:nth-child(5),
+        .icon-bot-deck-static .icon_bot:nth-child(5) { z-index: 16; }
+        .icon-bot-deck-static:hover img,
+        .icon-bot-deck-static:hover .icon_bot {
+            margin-left: 2px;
+        }
+        .dark .icon-bot-deck-static img,
+        .dark .icon-bot-deck-static .icon_bot {
+            border-color: #1f2937;
+            background: #1f2937;
+        }
+        .brand-name-link {
+            overflow-wrap: anywhere;
+        }
+        .table-link-label {
+            display: inline-block;
+            max-width: min(56ch, 52vw);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: bottom;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-300">
+
+    <!-- Dark Mode Toggle -->
+    <button class="dark-mode-toggle no-print" onclick="toggleDarkMode()" title="Toggle dark mode">
+        <i class="fas fa-moon dark:hidden"></i>
+        <i class="fas fa-sun hidden dark:inline"></i>
+    </button>
+
+    <!-- Header -->
+    <header class="shadow-lg bg-white dark:bg-gray-800">
+        <div class="container mx-auto px-4 py-3">
+            <!-- Mobile Header -->
+            <div class="md:hidden flex flex-col items-center justify-center w-full space-y-2">
+                <a href="https://www.aicw.io/aicw-ai-mentions?utm_source=public_reports&utm_medium=header&utm_campaign={{PROJECT_NAME_SLUG}}" title="Go to AICW AI Mentions"
+                   class="flex flex-col items-center leading-none text-gray-900 dark:text-white hover:opacity-80 transition-opacity">
+                    <span class="text-2xl font-bold tracking-tight">AICW AI Mentions</span>
+                </a>
+                <p class="text-sm text-gray-600 dark:text-gray-400 text-center">
+                    AI Mentions, Links & Domains Report for <strong class="text-gray-900 dark:text-white">{{PROJECT_NAME}}</strong>
+                </p>
+                <div class="flex items-center gap-3">
+                    <a href="https://www.aicw.io/aicw-ai-mentions?utm_source=public_reports&utm_medium=header&utm_campaign={{PROJECT_NAME_SLUG}}" target="_blank" rel="noopener noreferrer"
+                       class="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
+                        AICW.io
+                    </a>
+                </div>
+            </div>
+
+            <!-- Desktop Header -->
+            <div class="hidden md:flex flex-row items-center justify-between w-full">
+                <div class="flex flex-col">
+                    <a href="https://www.aicw.io/aicw-ai-mentions?utm_source=public_reports&utm_medium=header&utm_campaign={{PROJECT_NAME_SLUG}}" title="Go to AICW AI Mentions"
+                       class="flex flex-col leading-none text-gray-900 dark:text-white hover:opacity-80 transition-opacity">
+                        <span class="text-3xl font-bold tracking-tight">AICW AI Mentions</span>
+                    </a>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        AI Mentions, Links & Domains Report for <strong class="text-gray-900 dark:text-white">{{PROJECT_NAME}}</strong>
+                    </p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="https://www.aicw.io/aicw-ai-mentions?utm_source=public_reports&utm_medium=header&utm_campaign={{PROJECT_NAME_SLUG}}" target="_blank" rel="noopener noreferrer"
+                       class="inline-flex items-center gap-2 text-lg font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
+                        AICW.io
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-6 max-w-5xl">
+
+        <!-- Report Header -->
+        <div class="bg-indigo-600 dark:bg-indigo-700 rounded-2xl shadow-xl p-4 md:p-6 text-white mb-6">
+            <div>
+{{STATIC_REPORT_HEADER_HTML}}
+            </div>
+        </div>
+
+        <!-- Metrics Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+{{STATIC_METRICS_HTML}}
+        </div>
+
+        <!-- About This Report (SEO Introduction) -->
+{{STATIC_INTRO_HTML}}
+
+        <!-- Tab Navigation -->
+        <div class="flex flex-wrap gap-4 mb-6 border-b border-gray-200 dark:border-gray-700">
+            <button class="tab-btn active px-4 py-2 font-medium" data-target="panel-brands" onclick="switchTab(this)">
+                <i class="fas fa-building mr-2"></i>Mentions
+            </button>
+            <button class="tab-btn px-4 py-2 font-medium" data-target="panel-links" onclick="switchTab(this)">
+                <i class="fas fa-link mr-2"></i>Links
+            </button>
+            <button class="tab-btn px-4 py-2 font-medium" data-target="panel-domains" onclick="switchTab(this)">
+                <i class="fas fa-globe mr-2"></i>Link Domains
+            </button>
+        </div>
+
+        <!-- Mentions Table -->
+        <section id="panel-brands" class="tab-panel bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
+                <div>
+                    <div class="section-header">
+                        <i class="fas fa-building text-xl"></i>
+                        <h2>Mention Rankings</h2>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        People, organizations, products, and brands mentioned by AI models, ranked by share of voice
+                    </p>
+                </div>
+                <button type="button" onclick="exportTableToCSV('table-mentions', 'aicw-ai-mentions_mentions_{{PROJECT_NAME_SLUG}}.csv')"
+                    class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <i class="fas fa-download"></i>
+                    <span>Export CSV</span>
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table id="table-mentions" class="w-full sortable">
+                    <thead>
+                        <tr>
+                            <th>Mention</th>
+                            <th class="text-center">Voice</th>
+                            <th class="text-center">Position</th>
+                            <th class="text-center">Mentions</th>
+                            <th class="text-center">AI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+{{STATIC_BRANDS_TABLE_HTML}}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Links Table -->
+        <section id="panel-links" class="tab-panel bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8" style="display:none;">
+            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
+                <div>
+                    <div class="section-header">
+                        <i class="fas fa-link text-xl"></i>
+                        <h2>Links</h2>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Individual cited URLs, ranked by share of voice
+                    </p>
+                </div>
+                <button type="button" onclick="exportTableToCSV('table-links', 'aicw-ai-mentions_links_{{PROJECT_NAME_SLUG}}.csv')"
+                    class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <i class="fas fa-download"></i>
+                    <span>Export CSV</span>
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table id="table-links" class="w-full sortable">
+                    <thead>
+                        <tr>
+                            <th>Link</th>
+                            <th class="text-center">Voice</th>
+                            <th class="text-center">Position</th>
+                            <th class="text-center">Citations</th>
+                            <th class="text-center">AI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+{{STATIC_LINKS_TABLE_HTML}}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Link Domains Table -->
+        <section id="panel-domains" class="tab-panel bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8" style="display:none;">
+            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
+                <div>
+                    <div class="section-header">
+                        <i class="fas fa-globe text-xl"></i>
+                        <h2>Link Domains</h2>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Domains grouped from cited URLs, ranked by share of voice
+                    </p>
+                </div>
+                <button type="button" onclick="exportTableToCSV('table-domains', 'aicw-ai-mentions_link-domains_{{PROJECT_NAME_SLUG}}.csv')"
+                    class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <i class="fas fa-download"></i>
+                    <span>Export CSV</span>
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table id="table-domains" class="w-full sortable">
+                    <thead>
+                        <tr>
+                            <th>Domain</th>
+                            <th class="text-center">Voice</th>
+                            <th class="text-center">Position</th>
+                            <th class="text-center">Citations</th>
+                            <th class="text-center">AI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+{{STATIC_DOMAINS_TABLE_HTML}}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- noscript fallback - show all tables without JS -->
+        <noscript>
+            <style>#panel-links, #panel-domains { display: block !important; }</style>
+        </noscript>
+
+        <!-- Question Links Footer (for per-question reports only) -->
+{{STATIC_QUESTION_LINKS_FOOTER_HTML}}
+
+        <!-- Questions List (for aggregate reports only) -->
+{{STATIC_QUESTIONS_LIST_HTML}}
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-10 mt-8 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+        <div class="container mx-auto px-4">
+            <!-- Brand + CTA Row -->
+            <div class="flex flex-col md:flex-row gap-8 items-start md:items-center justify-between mb-8">
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white">AICW AI Mentions</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Open-source AI mention reports</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-4">
+                    <a href="https://www.aicw.io/aicw-ai-mentions?utm_source=public_reports&utm_medium=footer&utm_campaign={{PROJECT_NAME_SLUG}}" target="_blank" rel="noopener noreferrer"
+                       class="inline-flex items-center gap-2 text-lg font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
+                        AICW.io
+                    </a>
+                </div>
+            </div>
+
+            <!-- Copyright + Meta -->
+            <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    &copy; <span id="currentYear"></span>
+                    <a href="https://www.aicw.io/aicw-ai-mentions?utm_source=public_reports&utm_campaign={{PROJECT_NAME_SLUG}}" class="hover:text-indigo-600 dark:hover:text-indigo-400">AICW.io</a>.
+                    Generated by <a href="https://www.aicw.io/aicw-ai-mentions?utm_source=public_reports&utm_campaign={{PROJECT_NAME_SLUG}}" class="hover:text-indigo-600 dark:hover:text-indigo-400">AICW AI Mentions</a>.
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                    Generated on {{REPORT_CREATED_AT_DATETIME}} | Engine v{{REPORT_ENGINE_VERSION}}
+                </p>
+            </div>
+
+            <!-- Disclaimer -->
+            <p class="text-xs text-gray-500 dark:text-gray-500 mt-6 leading-relaxed">
+                DISCLAIMER: Intellectual Property Notice: All organizations and company names, trademarks, registered trademarks, service marks, logos, brand names, trade dress, and other intellectual property displayed in this report remain the sole property of their respective owners. Use of these marks does not imply any affiliation with, sponsorship by, or endorsement from the trademark holders. Any references to third-party trademarks are made solely for identification and informational purposes.
+No Endorsement: The inclusion of any third-party content, data, links, references, or mentions in this report does not constitute, and should not be construed as, an endorsement, recommendation, or approval by AICW.io of any product, service, company, organization, or viewpoint. Similarly, the absence of any entity from this report should not be interpreted as a negative assessment.
+Accuracy and Reliability: AICW.io makes no representations, warranties, or guarantees—express or implied—regarding the accuracy, completeness, reliability, timeliness, or suitability of any information contained in this report. The data presented herein is derived from automated analysis of artificial intelligence systems and publicly available sources, which may contain errors, omissions, or inaccuracies. AI-generated content and responses are subject to change without notice and may vary based on numerous factors beyond our control.
+Limitation of Liability: To the fullest extent permitted by applicable law, AICW.io, its affiliates, officers, directors, employees, agents, and licensors shall not be liable for any direct, indirect, incidental, special, consequential, punitive, or exemplary damages arising from or related to the use of, reliance upon, or inability to use any information contained in this report, even if advised of the possibility of such damages.
+No Professional Advice: The information provided in this report is for general informational and research purposes only and does not constitute legal, financial, business, marketing, or other professional advice. Users should consult qualified professionals before making any decisions based on the information contained herein.
+Third-Party Data Sources: This report may contain information obtained from or generated by third-party artificial intelligence platforms and other external sources. AICW.io does not control, verify, or guarantee the content produced by such third parties and assumes no responsibility for their accuracy, policies, or practices.
+Fair Use and Research Purpose: This report is provided for informational, research, and analytical purposes. Any data or analysis presented is intended to provide market insights and should not be used as the sole basis for business, investment, or strategic decisions.
+Modifications: Information in this report reflects data available at the time of generation. The report generator may change over time; regenerate reports after updating the software if you want the latest report format.
+Governing Law: This disclaimer shall be governed by and construed in accordance with applicable laws, without regard to conflicts of law principles.
+By accessing or using this report, you acknowledge that you have read, understood, and agree to be bound by this disclaimer.
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript for dark mode, tabs, and sortable tables -->
+    <script>
+        window.ReportQuestions = {{REPORT_QUESTIONS_JSON}};
+        window.ReportDate = '{{REPORT_DATE_ISO}}';
+
+        (function() {
+            var script = document.createElement('script');
+            script.src = '{{REPORT_DATE_ISO}}-answers.js';
+            script.onload = function() {
+                window.fullAnswers = window['answers{{REPORT_DATE_WITHOUT_DASHES}}'];
+            };
+            script.onerror = function() {
+                console.log('Answers file not available - model response links disabled');
+            };
+            document.head.appendChild(script);
+        })();
+
+        // Set current year
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        // Apply dark mode on page load
+        if (localStorage.getItem('aicwDarkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Toggle dark mode
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('aicwDarkMode', isDark.toString());
+        }
+
+        // Tab switching
+        function switchTab(btn) {
+            // Update button states
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Show/hide panels
+            document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+            document.getElementById(btn.dataset.target).style.display = 'block';
+        }
+
+        function exportTableToCSV(tableId, filename) {
+            var table = document.getElementById(tableId);
+            if (!table) return;
+
+            function csvCell(text) {
+                text = String(text || '').replace(/\s+/g, ' ').trim();
+                return '"' + text.replace(/"/g, '""') + '"';
+            }
+
+            var rows = Array.from(table.querySelectorAll('tr'));
+            var csvRows = rows.map(function(row) {
+                return Array.from(row.children).map(function(cell) {
+                    var text = cell.dataset.exportValue || cell.innerText || cell.textContent || '';
+                    return csvCell(text);
+                }).join(',');
+            });
+
+            csvRows.push('', '');
+            csvRows.push(csvCell('Created with AICW AI Mentions'));
+            csvRows.push(csvCell('https://aicw.io/aicw-ai-mentions'));
+            var csv = csvRows.join('\n');
+
+            var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            var url = URL.createObjectURL(blob);
+            var link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function filterTable(tableId) {
+            var table = document.getElementById(tableId);
+            if (!table) return;
+
+            var needle = (table.dataset.searchQuery || '').toLowerCase().trim();
+            var activeTag = (table.dataset.activeTag || '').toLowerCase().trim();
+            var activeModel = (table.dataset.activeModel || '').trim();
+
+            Array.from(table.querySelectorAll('tbody tr')).forEach(function(row) {
+                var haystack = (row.innerText || row.textContent || '').toLowerCase();
+                var rowBotIds = (row.dataset.botIds || '').split('|').filter(Boolean);
+                var textMatch = !needle || haystack.includes(needle);
+                var tagMatch = !activeTag || Array.from(row.querySelectorAll('.type-badge')).some(function(tag) {
+                    return (tag.innerText || tag.textContent || '').toLowerCase().trim() === activeTag;
+                });
+                var modelMatch = !activeModel || rowBotIds.includes(activeModel);
+                row.style.display = textMatch && tagMatch && modelMatch ? '' : 'none';
+            });
+        }
+
+        function setTableSearchQuery(tableId, query) {
+            var table = document.getElementById(tableId);
+            if (!table) return;
+            table.dataset.searchQuery = query || '';
+            filterTable(tableId);
+        }
+
+        function setTableModelFilter(tableId, modelId) {
+            var table = document.getElementById(tableId);
+            if (!table) return;
+            table.dataset.activeModel = modelId || '';
+            filterTable(tableId);
+        }
+
+        function setTableTagFilter(tableId, tag, button) {
+            var table = document.getElementById(tableId);
+            if (!table) return;
+
+            var nextTag = table.dataset.activeTag === tag ? '' : tag;
+            table.dataset.activeTag = nextTag;
+
+            var controls = button.closest('.table-search-control');
+            if (controls) {
+                Array.from(controls.querySelectorAll('[data-table-tag]')).forEach(function(chip) {
+                    var isActive = chip.dataset.tableTag === nextTag;
+                    chip.classList.toggle('bg-indigo-600', isActive);
+                    chip.classList.toggle('text-white', isActive);
+                    chip.classList.toggle('border-indigo-600', isActive);
+                    chip.classList.toggle('bg-white', !isActive);
+                    chip.classList.toggle('dark:bg-gray-800', !isActive);
+                    chip.classList.toggle('text-gray-700', !isActive);
+                    chip.classList.toggle('dark:text-gray-200', !isActive);
+                    chip.classList.toggle('border-gray-200', !isActive);
+                    chip.classList.toggle('dark:border-gray-700', !isActive);
+                });
+            }
+
+            filterTable(tableId);
+        }
+
+        function getTableTypeTags(table) {
+            var tags = new Set();
+            Array.from(table.querySelectorAll('tbody .type-badge')).forEach(function(tag) {
+                var text = (tag.innerText || tag.textContent || '').trim();
+                if (text) tags.add(text);
+            });
+            return Array.from(tags).sort(function(a, b) { return a.localeCompare(b); });
+        }
+
+        function getTableModels(table) {
+            var models = new Map();
+            Array.from(table.querySelectorAll('tbody tr')).forEach(function(row) {
+                var ids = (row.dataset.botIds || '').split('|').filter(Boolean);
+                var names = (row.dataset.botNames || '').split('|').filter(Boolean);
+                ids.forEach(function(id, index) {
+                    if (!models.has(id)) {
+                        models.set(id, names[index] || id);
+                    }
+                });
+            });
+
+            return Array.from(models.entries())
+                .map(function(entry) {
+                    return { id: entry[0], name: entry[1] };
+                })
+                .sort(function(a, b) { return a.name.localeCompare(b.name); });
+        }
+
+        function escapeHtmlValue(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function installTableSearchControls() {
+            Array.from(document.querySelectorAll('table')).forEach(function(table, index) {
+                if (table.dataset.searchInstalled === 'true') return;
+                if (!table.id) table.id = 'searchable-table-' + index;
+                table.dataset.searchInstalled = 'true';
+
+                var typeTags = getTableTypeTags(table);
+                var tagButtons = typeTags.length
+                    ? '<div class="flex flex-wrap items-center gap-2">' + typeTags.map(function(tag) {
+                        return '<button type="button" data-table-tag="' + escapeHtmlValue(tag) + '" class="px-2.5 py-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-medium text-gray-700 dark:text-gray-200 hover:border-indigo-500">' + escapeHtmlValue(tag) + '</button>';
+                    }).join('') + '</div>'
+                    : '';
+                var models = getTableModels(table);
+                var modelSelect = models.length
+                    ? [
+                        '<label class="relative w-full sm:w-64">',
+                        '<span class="sr-only">Filter by model</span>',
+                        '<i class="fas fa-robot absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>',
+                        '<select data-table-model-select class="w-full appearance-none pl-9 pr-8 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">',
+                        '<option value="">All models</option>',
+                        models.map(function(model) {
+                            return '<option value="' + escapeHtmlValue(model.id) + '">' + escapeHtmlValue(model.name) + '</option>';
+                        }).join(''),
+                        '</select>',
+                        '<i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>',
+                        '</label>'
+                    ].join('')
+                    : '';
+
+                var control = document.createElement('div');
+                control.className = 'table-search-control flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3';
+                control.innerHTML = [
+                    tagButtons || '<div></div>',
+                    '<div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">',
+                    modelSelect,
+                    '<label class="relative w-full sm:w-72">',
+                    '<span class="sr-only">Search table</span>',
+                    '<i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>',
+                    '<input type="search" data-table-search-input placeholder="Search table..."',
+                    ' class="w-full pl-9 pr-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"',
+                    '>',
+                    '</label>',
+                    '</div>'
+                ].join('');
+
+                var input = control.querySelector('[data-table-search-input]');
+                if (input) {
+                    input.addEventListener('input', function() {
+                        setTableSearchQuery(table.id, input.value);
+                    });
+                }
+
+                var select = control.querySelector('[data-table-model-select]');
+                if (select) {
+                    select.addEventListener('change', function() {
+                        setTableModelFilter(table.id, select.value);
+                    });
+                }
+
+                Array.from(control.querySelectorAll('[data-table-tag]')).forEach(function(button) {
+                    button.addEventListener('click', function() {
+                        setTableTagFilter(table.id, button.dataset.tableTag, button);
+                    });
+                });
+
+                var wrapper = table.closest('.overflow-x-auto') || table;
+                wrapper.parentNode.insertBefore(control, wrapper);
+            });
+        }
+
+        installTableSearchControls();
+
+        // Universal sortable table - works on any table.sortable
+        document.querySelectorAll('table.sortable').forEach(table => {
+            const headers = table.querySelectorAll('th');
+            headers.forEach((th, colIndex) => {
+                th.addEventListener('click', () => {
+                    const tbody = table.querySelector('tbody');
+                    const rows = Array.from(tbody.querySelectorAll('tr'));
+                    const isAsc = th.classList.contains('sort-asc');
+
+                    // Reset all headers, set current
+                    headers.forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+                    th.classList.add(isAsc ? 'sort-desc' : 'sort-asc');
+
+                    // Sort rows
+                    rows.sort((a, b) => {
+                        let aText = a.cells[colIndex]?.textContent || '';
+                        let bText = b.cells[colIndex]?.textContent || '';
+
+                        // Strip non-numeric chars for number comparison
+                        const aNum = parseFloat(aText.replace(/[^0-9.-]/g, ''));
+                        const bNum = parseFloat(bText.replace(/[^0-9.-]/g, ''));
+
+                        // If both are numbers, compare numerically
+                        if (!isNaN(aNum) && !isNaN(bNum)) {
+                            return isAsc ? bNum - aNum : aNum - bNum;
+                        }
+                        // Otherwise string compare
+                        return isAsc
+                            ? bText.localeCompare(aText)
+                            : aText.localeCompare(bText);
+                    });
+
+                    // Re-append sorted rows
+                    rows.forEach(row => tbody.appendChild(row));
+                });
+            });
+        });
+
+        // Modal control functions
+        function openQuestionsModal() {
+            var modal = document.getElementById('questions-modal');
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+        function closeQuestionsModal() {
+            var modal = document.getElementById('questions-modal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+        function getAnswersData() {
+            return window.fullAnswers || window['answers{{REPORT_DATE_WITHOUT_DASHES}}'] || null;
+        }
+        function getQuestionLabel(questionId) {
+            var questions = Array.isArray(window.ReportQuestions) ? window.ReportQuestions : [];
+            var question = questions.find(function(item) { return item.id === questionId; });
+            return question && question.text ? question.text : questionId;
+        }
+        function sanitizeAnswerHtml(html) {
+            var template = document.createElement('template');
+            template.innerHTML = html || '';
+            template.content.querySelectorAll('script, style, iframe, object, embed, link, meta, base').forEach(function(node) {
+                node.remove();
+            });
+            template.content.querySelectorAll('*').forEach(function(node) {
+                Array.from(node.attributes).forEach(function(attr) {
+                    var name = attr.name.toLowerCase();
+                    var value = (attr.value || '').trim();
+                    if (name.indexOf('on') === 0 || name === 'srcdoc') {
+                        node.removeAttribute(attr.name);
+                    }
+                    if ((name === 'href' || name === 'src') && /^(javascript|data):/i.test(value)) {
+                        node.removeAttribute(attr.name);
+                    }
+                });
+                if (node.tagName && node.tagName.toLowerCase() === 'a') {
+                    node.setAttribute('target', '_blank');
+                    node.setAttribute('rel', 'noopener noreferrer');
+                }
+            });
+            return template.innerHTML;
+        }
+        function setAnswerTab(button, mode) {
+            var card = button.closest('[data-answer-response-card]');
+            if (!card) return;
+
+            Array.from(card.querySelectorAll('[data-answer-tab]')).forEach(function(tab) {
+                var isActive = tab.dataset.answerTab === mode;
+                tab.classList.toggle('active', isActive);
+                tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+
+            Array.from(card.querySelectorAll('[data-answer-panel]')).forEach(function(panel) {
+                panel.style.display = panel.dataset.answerPanel === mode ? '' : 'none';
+            });
+        }
+        function openModelResponse(button) {
+            var modelId = button.dataset.modelId;
+            var modelName = button.dataset.modelName || modelId;
+            var questionId = button.dataset.questionId || '';
+            var answers = getAnswersData();
+            var date = window.ReportDate || '{{REPORT_DATE_ISO}}';
+            var modal = document.getElementById('answer-modal');
+            var modelEl = document.getElementById('answer-modal-model');
+            var contentEl = document.getElementById('answer-modal-content');
+            var dateEl = document.getElementById('answer-modal-date');
+            if (!modal || !modelEl || !contentEl || !dateEl) return;
+
+            var iconHtml = button.dataset.modelIcon
+                ? "<img src=\"" + escapeHtmlValue(button.dataset.modelIcon) + "\" alt=\"\" class=\"w-5 h-5 rounded\" onerror=\"this.style.display='none'\">"
+                : '<span class="icon_bot icon_bot_unknown">' + escapeHtmlValue(button.dataset.modelInitial || '?') + '</span>';
+            modelEl.innerHTML = iconHtml + '<span>' + escapeHtmlValue(modelName) + '</span>';
+            dateEl.textContent = date;
+            contentEl.innerHTML = '';
+
+            if (!answers) {
+                var loading = document.createElement('p');
+                loading.className = 'text-sm text-gray-600 dark:text-gray-300';
+                loading.textContent = 'Responses are still loading. Try again in a moment.';
+                contentEl.appendChild(loading);
+            } else {
+                var questionIds = questionId ? [questionId] : Object.keys(answers);
+                var list = document.createElement('div');
+                list.className = 'answer-response-list';
+                var found = 0;
+
+                questionIds.forEach(function(currentQuestionId) {
+                    var answer = answers[currentQuestionId] && answers[currentQuestionId][date] && answers[currentQuestionId][date][modelId];
+                    if (!answer || !answer.text) return;
+
+                    var card = document.createElement('article');
+                    card.className = 'answer-response-card';
+                    card.setAttribute('data-answer-response-card', 'true');
+
+                    var question = document.createElement('h3');
+                    question.className = 'answer-response-question';
+                    question.textContent = getQuestionLabel(currentQuestionId);
+                    card.appendChild(question);
+
+                    var tabs = document.createElement('div');
+                    tabs.className = 'answer-response-tabs';
+                    tabs.setAttribute('role', 'tablist');
+
+                    var answerTab = document.createElement('button');
+                    answerTab.type = 'button';
+                    answerTab.className = 'answer-tab-button active';
+                    answerTab.dataset.answerTab = 'answer';
+                    answerTab.setAttribute('role', 'tab');
+                    answerTab.setAttribute('aria-selected', 'true');
+                    answerTab.textContent = 'Answer';
+                    answerTab.addEventListener('click', function() {
+                        setAnswerTab(answerTab, 'answer');
+                    });
+                    tabs.appendChild(answerTab);
+
+                    var codeTab = document.createElement('button');
+                    codeTab.type = 'button';
+                    codeTab.className = 'answer-tab-button';
+                    codeTab.dataset.answerTab = 'code';
+                    codeTab.setAttribute('role', 'tab');
+                    codeTab.setAttribute('aria-selected', 'false');
+                    codeTab.textContent = 'Code';
+                    codeTab.addEventListener('click', function() {
+                        setAnswerTab(codeTab, 'code');
+                    });
+                    tabs.appendChild(codeTab);
+                    card.appendChild(tabs);
+
+                    var rendered = document.createElement('div');
+                    rendered.className = 'answer-response-markdown';
+                    rendered.dataset.answerPanel = 'answer';
+                    if (answer.html) {
+                        rendered.innerHTML = sanitizeAnswerHtml(answer.html);
+                    } else {
+                        rendered.textContent = answer.text;
+                    }
+                    card.appendChild(rendered);
+
+                    var code = document.createElement('pre');
+                    code.className = 'answer-response-code';
+                    code.dataset.answerPanel = 'code';
+                    code.style.display = 'none';
+                    var codeInner = document.createElement('code');
+                    codeInner.textContent = answer.text;
+                    code.appendChild(codeInner);
+                    card.appendChild(code);
+
+                    list.appendChild(card);
+                    found++;
+                });
+
+                if (found > 0) {
+                    contentEl.appendChild(list);
+                } else {
+                    var empty = document.createElement('p');
+                    empty.className = 'text-sm text-gray-600 dark:text-gray-300';
+                    empty.textContent = 'No saved response is available for this model in this report.';
+                    contentEl.appendChild(empty);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeAnswerModal() {
+            var modal = document.getElementById('answer-modal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+        // Close on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeQuestionsModal();
+                closeAnswerModal();
+            }
+        });
+    </script>
+
+    <!-- Questions Modal -->
+{{STATIC_QUESTIONS_MODAL_HTML}}
+    <!-- Model Response Modal -->
+    <div id="answer-modal" class="questions-modal-overlay" onclick="if(event.target===this)closeAnswerModal()">
+        <div class="questions-modal answer-modal">
+            <div class="questions-modal-header">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-900 dark:text-white">AI Response</h2>
+                    <div class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        <span id="answer-modal-model" class="flex items-center gap-2"></span>
+                        <span>•</span>
+                        <span id="answer-modal-date"></span>
+                    </div>
+                </div>
+                <button class="questions-modal-close" onclick="closeAnswerModal()" aria-label="Close">&times;</button>
+            </div>
+            <div class="questions-modal-body">
+                <div id="answer-modal-content"></div>
+            </div>
+        </div>
+    </div>
+{{FOOTER_CUSTOM_CODE}}
+</body>
+
+</html>

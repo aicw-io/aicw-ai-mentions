@@ -116,7 +116,7 @@ export async function startServer(): Promise<number> {
 
     return new Promise((resolve, reject) => {
       server.listen(port, () => {
-        logger.info('\n🌐 AI Chat Watch Report Server');
+        logger.info('\n🌐 aicw-ai-mentions - AI Mentions Server');
         if (port !== DEFAULT_PORT) {
           logger.info(`⚠️  Port ${DEFAULT_PORT} was busy, using port ${port} instead`);
         }

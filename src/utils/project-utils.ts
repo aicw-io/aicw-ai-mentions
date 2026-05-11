@@ -22,10 +22,6 @@ import { DATE_FOLDER_NAME_PATTERN_REGEX} from "../config/paths.js";
 export const enum ModelType {
   GET_ANSWER = 'get_answer',
   EXTRACT_ENTITIES = 'extract_entities',
-  GENERATE_SUMMARY = "generate_summary",
-  GENERATE_LINKS_FOR_ENTITIES = "generate-links-for-entities",
-  GENERATE_SIMILAR_FOR_ENTITIES = "generate_similar_for_entities",
-  GET_LINK_TYPE = "get_link_type",
 }
 
 export async function removeNonProjectModels(dirs: DirentLike[], models: ModelConfig[]): Promise<DirentLike[]> {
@@ -724,7 +720,8 @@ async function validateProjectConfig(projectPath: string): Promise<ValidationRes
 
     // Check for unknown fields
     const knownFields = ['name', 'display_name', 'ai_preset', 'questions',
-                        'created_at', 'updated_at', 'description', 'latest_complete_answers_date'];
+                        'created_at', 'updated_at', 'description', 'latest_complete_answers_date',
+                        'published_url_base'];
     const unknownFields = Object.keys(config).filter(key => !knownFields.includes(key));
     if (unknownFields.length > 0) {
       result.errors.push(`Unknown fields in project.json: ${unknownFields.join(', ')}`);

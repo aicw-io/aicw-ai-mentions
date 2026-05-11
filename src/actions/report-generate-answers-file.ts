@@ -86,7 +86,7 @@ export async function generateAnswersFile(project: string, targetDate: string): 
   logger.info(`Generating answers file for project: ${project}, date: ${targetDate}`);
   
   const questionsDir = QUESTIONS_DIR(project);
-  const outputDir = OUTPUT_DIR(project, targetDate);
+  const outputDir = OUTPUT_DIR(project);
   const targetDateWithoutDashes = targetDate.replace(/-/g, '');
   
   // Ensure output directory exists

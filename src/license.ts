@@ -8,11 +8,10 @@ import { getPackageRoot } from './config/user-paths.js';
 import { colorize } from './utils/misc-utils.js';
 
 async function main() {
-  console.log(colorize('\n📜 AI Chat Watch - License Information', 'bright'));
+  console.log(colorize('\n📜 aicw-ai-mentions - License Information', 'bright'));
   console.log(colorize('━'.repeat(50), 'dim'));
 
-  // Read and display LICENSE.md
-  const licensePath = join(getPackageRoot(), 'LICENSE.md');
+  const licensePath = join(getPackageRoot(), 'LICENSE');
 
   try {
     const content = await fs.readFile(licensePath, 'utf-8');

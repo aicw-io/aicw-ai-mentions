@@ -1,13 +1,11 @@
 import { logger } from '../utils/compact-logger.js';
 import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
-import { LINK_TYPE_NAMES } from '../utils/link-classifier.js';
 import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { extractDomainFromUrl } from '../utils/url-utils.js';
 import { getTargetDateFromProjectOrEnvironment, getProjectNameFromCommandLine, validateAndLoadProject } from '../utils/project-utils.js';
 import { readQuestions, loadDataJs, saveDataJs } from '../utils/project-utils.js';
 import { PipelineCriticalError, createMissingFileError, createMissingDataError } from '../utils/pipeline-errors.js';
 import { prepareStepFiles } from '../utils/enrich-data-utils.js';
-import { DEFAULT_OTHER_LINK_TYPE_SHORT_NAME, DEFAULT_OTHER_LINK_TYPE_LONG_NAME } from '../config/user-paths.js';
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
@@ -26,17 +24,11 @@ function createLinkDomainsFromLinks(links: any[]): any[] {
     if (!domain) continue; // Skip if no valid domain
 
     if (!domainMap.has(domain)) {
-      // Get linkType from the link (inherit from first link with this domain)
-      const linkType = link.linkType || DEFAULT_OTHER_LINK_TYPE_SHORT_NAME;
-      const linkTypeName = LINK_TYPE_NAMES[linkType] || DEFAULT_OTHER_LINK_TYPE_LONG_NAME;
-
       domainMap.set(domain, {
         type: 'linkDomain',
         code: domain,
         value: domain,
-        link: 'https://' + domain,
-        linkType: linkType,
-        linkTypeName: linkTypeName
+        link: 'https://' + domain
       });
     }
   }

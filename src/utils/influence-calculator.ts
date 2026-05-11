@@ -281,7 +281,7 @@ export function normalizeInfluences(items: any[]): void {
 
 /**
  * Calculate influence for all items in a batch
- * This handles the full enrichment process including appearanceOrder calculation
+ * Uses Share of Voice calculation with proper maxProminence normalization.
  *
  * @param items - Array of items to calculate influence for
  * @param models - Array of model configurations
@@ -298,12 +298,27 @@ export function calculateInfluenceForItems(
   // Get normalized weights once
   const normalizedWeights = normalizeModelWeights(models);
 
-  // Calculate influence for each item
+  // STEP 1: Calculate maxProminence across all items (same as report-aggregation.ts)
+  // This is needed for proper Share of Voice calculation
+  let maxProminence = 0;
+  for (const item of items) {
+    if (!item.mentions || item.mentions === 0) continue;
+
+    let totalProminence = 0;
+    for (const [modelId, mentions] of Object.entries(item.mentionsByModel || {})) {
+      const appearanceOrder = (item.appearanceOrderByModel || {})[modelId] || 999;
+      totalProminence += calculateProminence(mentions as number, appearanceOrder);
+    }
+    maxProminence = Math.max(maxProminence, totalProminence);
+  }
+
+  // STEP 2: Calculate Share of Voice for each item using maxProminence
   for (const item of items) {
     // Skip if no mentions
     if (!item.mentions || item.mentions === 0) {
       item.influence = 0;
       item.influenceByModel = {};
+      item.weightedInfluence = 0;
       continue;
     }
 
@@ -317,36 +332,28 @@ export function calculateInfluenceForItems(
       }
     }
 
-    // Calculate average appearanceOrder if not already set
-    if (!item.appearanceOrder || item.appearanceOrder === -1) {
-      const appearanceOrders = Object.values(item.appearanceOrderByModel).filter((p): p is number => typeof p === 'number' && p > 0);
-      if (appearanceOrders.length > 0) {
-        item.appearanceOrder = appearanceOrders.reduce((a: number, b: number) => a + b, 0) / appearanceOrders.length;
-      } else {
-        item.appearanceOrder = 999;
-      }
-    }
-
-    // Calculate weighted influence
-    item.influence = calculateWeightedInfluence(
+    // Calculate Share of Voice (not legacy calculateWeightedInfluence)
+    item.influence = calculateShareOfVoice(
       item.mentionsByModel || {},
       item.appearanceOrderByModel || {},
-      normalizedWeights
+      normalizedWeights,
+      maxProminence
     );
 
-    // Calculate per-model influence
+    // Calculate per-model influence with maxProminence
     item.influenceByModel = calculateInfluenceByModel(
       item.mentionsByModel || {},
       item.appearanceOrderByModel || {},
-      normalizedWeights
+      normalizedWeights,
+      maxProminence
     );
 
     // Keep weightedInfluence for backward compatibility
     item.weightedInfluence = item.influence;
   }
 
-  // Normalize all influences so max = 1.0
-  normalizeInfluences(items);
+  // NOTE: Do NOT call normalizeInfluences() - Share of Voice already returns 0-1 normalized values
+  // Calling it would cause double normalization
 
   return items;
 }

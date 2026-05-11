@@ -12,9 +12,8 @@ import { QUESTIONS_DIR, CAPTURE_DIR } from '../config/paths.js';
 import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { logger } from '../utils/compact-logger.js';
 import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
-import { extractHostname } from '../utils/link-classifier.js';
 import { isInterrupted } from '../utils/delay.js';
-import { MAIN_SECTIONS } from '../config/constants-entities.js';
+import { ENRICHMENT_SECTIONS } from '../config/constants-entities.js';
 import { PipelineCriticalError, createMissingFileError } from '../utils/pipeline-errors.js';
 import {
   EnrichedItem,
@@ -79,7 +78,9 @@ function stringToFlexibleRegExp(str: string): RegExp {
     }
   });
 
-  return new RegExp(flexiblePattern, 'gi');
+  // Wrap with word boundaries to prevent matching substrings inside other words
+  // e.g., "EA" should not match inside "leading" or "real-time"
+  return new RegExp(`\\b${flexiblePattern}\\b`, 'gi');
 }
 
 /**
@@ -103,7 +104,8 @@ function maskMarkdownLinkUrls(text: string): string {
 function countMentionsInAnswer(
   term: string,
   answerText: string,
-  captureDate?: string
+  captureDate?: string,
+  promptId?: string
 ): { count: number; firstAppearanceOrder: number; excerpts: any[] } {
   const lowerAnswer = answerText.toLowerCase();
   let lowerTerm = term.toLowerCase();
@@ -119,7 +121,7 @@ function countMentionsInAnswer(
   let count = 0;
   let firstAppearanceOrder = -1;
   const excerpts: any[] = [];
-  const CONTEXT_CHARS = 100;
+  const CONTEXT_CHARS = 300;
 
   // Helper to calculate line and column from position
   const getLineAndColumn = (pos: number): { line: number; column: number } => {
@@ -204,12 +206,23 @@ function countMentionsInAnswer(
       // Use case-insensitive indexOf (both strings are already lowercase)
       let searchIndex = 0;
       while ((searchIndex = lowerTextToSearch.indexOf(lowerTerm, searchIndex)) !== -1) {
+        // Check word boundaries to prevent substring matches (e.g., "EA" in "leading")
+        const charBefore = searchIndex > 0 ? lowerTextToSearch[searchIndex - 1] : '';
+        const charAfter = lowerTextToSearch[searchIndex + lowerTerm.length] || '';
+        const isWordChar = /[a-z0-9]/i;
+
+        // Skip if surrounded by word characters (not at word boundary)
+        if (isWordChar.test(charBefore) || isWordChar.test(charAfter)) {
+          searchIndex += 1;
+          continue;
+        }
+
         // Create a proper RegExpMatchArray-compatible object
         const matchArray = [answerText.substr(searchIndex, lowerTerm.length)] as RegExpMatchArray;
         matchArray.index = searchIndex;
         matchArray.input = answerText;
         matches.push(matchArray);
-        searchIndex += 1; // Move past this position to find overlapping matches
+        searchIndex += lowerTerm.length; // Move past this match
       }
       regexSuccess = true; // Mark as handled
     }
@@ -258,7 +271,8 @@ function countMentionsInAnswer(
           excerpt,
           line,
           column,
-          captureDate
+          captureDate,
+          promptId
         });
       }
     }
@@ -268,12 +282,192 @@ function countMentionsInAnswer(
 }
 
 /**
+ * Normalize URL for comparison (removes protocol, www, trailing slash, query/fragment)
+ */
+function normalizeUrlForComparison(url: string): string {
+  let normalized = url.toLowerCase();
+  normalized = normalized.replace(/^https?:\/\//, '');
+  normalized = normalized.replace(/^www\./, '');
+  normalized = normalized.replace(/\/$/, '');
+  normalized = normalized.split(/[?#]/)[0];
+  return normalized;
+}
+
+/**
+ * Count URL mentions in text, excluding positions already counted by longer URLs.
+ * Returns count, positions, firstAppearanceOrder, and excerpts.
+ */
+function countUrlMentionsExcluding(
+  urlToFind: string,
+  answerText: string,
+  excludePositions: Set<number>,
+  captureDate?: string,
+  promptId?: string
+): { count: number; positions: number[]; firstAppearanceOrder: number; excerpts: any[] } {
+  const normalizedSearchUrl = normalizeUrlForComparison(urlToFind);
+  const positions: number[] = [];
+  const excerpts: any[] = [];
+  let firstAppearanceOrder = -1;
+  const CONTEXT_CHARS = 300;
+
+  // Helper to calculate line and column from position
+  const getLineAndColumn = (pos: number): { line: number; column: number } => {
+    let line = 1;
+    let column = 1;
+    for (let i = 0; i < pos; i++) {
+      if (answerText[i] === '\n') {
+        line++;
+        column = 1;
+      } else {
+        column++;
+      }
+    }
+    return { line, column };
+  };
+
+  // Find all URL matches in text (handles both markdown links and plain URLs)
+  const urlRegex = /(?:\[([^\]]+)\]\()?((?:https?:\/\/)?(?:www\.)?[a-z0-9][-a-z0-9._]*\.[a-z]{2,}(?:\/[^\s)\]]*)?)/gi;
+
+  let match;
+  while ((match = urlRegex.exec(answerText)) !== null) {
+    const foundUrl = match[2];
+    const normalizedFoundUrl = normalizeUrlForComparison(foundUrl);
+    const matchStart = match.index;
+
+    // Skip if this position was already counted by a longer URL
+    if (excludePositions.has(matchStart)) continue;
+
+    // Check if this URL matches our search URL:
+    // - Exact match
+    // - Found URL starts with search URL + "/" (search URL is a prefix/domain of found URL)
+    // - Search URL starts with found URL + "/" (found URL is a prefix/domain of search URL)
+    if (normalizedFoundUrl === normalizedSearchUrl ||
+        normalizedFoundUrl.startsWith(normalizedSearchUrl + '/') ||
+        normalizedSearchUrl.startsWith(normalizedFoundUrl + '/')) {
+      positions.push(matchStart);
+
+      // Track earliest appearance
+      if (firstAppearanceOrder === -1 || matchStart < firstAppearanceOrder) {
+        firstAppearanceOrder = matchStart;
+      }
+
+      // Create excerpt (limit to 5)
+      if (excerpts.length < 5) {
+        const startPos = Math.max(0, matchStart - CONTEXT_CHARS);
+        const endPos = Math.min(answerText.length, matchStart + match[0].length + CONTEXT_CHARS);
+        const excerpt = answerText.substring(startPos, endPos).trim();
+        const { line, column } = getLineAndColumn(matchStart);
+
+        excerpts.push({
+          appearanceOrder: matchStart,
+          excerpt,
+          line,
+          column,
+          captureDate,
+          promptId
+        });
+      }
+    }
+  }
+
+  return { count: positions.length, positions, firstAppearanceOrder, excerpts };
+}
+
+/**
+ * Calculate mentions for link items using longest-first strategy.
+ * Prevents double-counting by tracking which text positions have been counted.
+ */
+function calculateLinkMentions(
+  linkItems: EnrichedItem[],
+  answers: AnswerData[],
+  currentDate: string,
+  models: any[]
+): void {
+  // Sort links by URL length (longest first)
+  const sortedLinks = [...linkItems].sort((a, b) => {
+    const urlA = (a.link || a.value || '').toString();
+    const urlB = (b.link || b.value || '').toString();
+    return urlB.length - urlA.length;
+  });
+
+  // Initialize all link items
+  for (const item of linkItems) {
+    item.mentions = 0;
+    item.mentionsByModel = {};
+    item.firstAppearanceOrderCharByModel = {};
+    item.excerptsByModel = {};
+
+    models.forEach(model => {
+      item.mentionsByModel![model.id] = 0;
+      item.firstAppearanceOrderCharByModel![model.id] = -1;
+    });
+  }
+
+  // For each answer, process links from longest to shortest
+  for (const answer of answers) {
+    // Only count mentions from the current date's answers
+    if (answer.date && answer.date !== currentDate) continue;
+
+    // Track counted positions for this answer (shared across all links)
+    const countedPositions = new Set<number>();
+
+    // Process links from longest to shortest
+    for (const item of sortedLinks) {
+      const urlToSearch = (item.link || item.value || '').toString();
+      if (!urlToSearch) continue;
+
+      // Count mentions that haven't been counted yet
+      const { count, positions, firstAppearanceOrder, excerpts } = countUrlMentionsExcluding(
+        urlToSearch,
+        answer.text,
+        countedPositions,
+        currentDate,
+        answer.promptId
+      );
+
+      // Mark these positions as counted (for subsequent shorter URLs)
+      positions.forEach(pos => countedPositions.add(pos));
+
+      // Accumulate to item
+      item.mentionsByModel![answer.modelId] = (item.mentionsByModel![answer.modelId] || 0) + count;
+      item.mentions = (item.mentions || 0) + count;
+
+      // Collect excerpts
+      if (!item.excerptsByModel![answer.modelId]) {
+        item.excerptsByModel![answer.modelId] = [];
+      }
+      item.excerptsByModel![answer.modelId].push(...excerpts);
+
+      // Track earliest appearance order
+      if (count > 0) {
+        const currentFirst = item.firstAppearanceOrderCharByModel![answer.modelId];
+        if (currentFirst === -1 || firstAppearanceOrder < currentFirst) {
+          item.firstAppearanceOrderCharByModel![answer.modelId] = firstAppearanceOrder;
+        }
+      }
+    }
+  }
+
+  // Finalize link items (bots, percentages, etc.)
+  for (const item of linkItems) {
+    // Add bots property - comma-separated string of bot IDs that mentioned this item
+    const botsWithMentions = Object.entries(item.mentionsByModel || {})
+      .filter(([_, mentions]) => (mentions as number) > 0)
+      .map(([botId]) => botId);
+    item.bots = botsWithMentions.join(',');
+    item.botCount = botsWithMentions.length;
+    item.uniqueModelCount = botsWithMentions.length;
+  }
+}
+
+/**
  * Read answers from capture directory
  */
 async function readAnswers(
   folder: string,
   dates: string | string[],
-  allowedModels: any[]
+  allowedModels: any[],
+  promptId?: string  // Question folder name for answer lookup
 ): Promise<AnswerData[]> {
   const answers: AnswerData[] = [];
   const datesToProcess = Array.isArray(dates) ? dates : [dates];
@@ -291,7 +485,7 @@ async function readAnswers(
         const answerFile = path.join(answersDir, modelId, 'answer.md');
         try {
           const text = await fs.readFile(answerFile, 'utf-8');
-          answers.push({ text, modelId, date });
+          answers.push({ text, modelId, date, promptId });
         } catch (error) {
           // Answer file doesn't exist for this model
           continue;
@@ -317,25 +511,24 @@ function calculateMentions(
 ): void {
   if (!Array.isArray(items)) return;
 
-  // Step 1: Collect mentions for each item in each answer
-  for (const item of items) {
+  // Separate links from other items for special handling
+  // Links use longest-first strategy to prevent double-counting
+  const linkItems = items.filter(item => item.type === 'link');
+  const nonLinkItems = items.filter(item => item.type !== 'link');
+
+  // Process links with longest-first strategy to prevent double-counting
+  if (linkItems.length > 0) {
+    calculateLinkMentions(linkItems, answers, currentDate, models);
+  }
+
+  // Step 1: Collect mentions for each non-link item in each answer
+  for (const item of nonLinkItems) {
     // Get the value to display
     const displayValue = (item.value || item.link || item.keyword || item.organization || item.source || '').toString();
     if (!displayValue) continue;
 
-    // For links, use the domain for counting mentions
-    let searchTerm = displayValue;
-    if (item.type === 'link') {
-      const urlToCheck = item.link || item.value || displayValue;
-      const domain = extractHostname(urlToCheck);
-      if (domain) {
-        searchTerm = domain;
-        // Store the original full URL to preserve it
-        if (urlToCheck !== domain) {
-          (item as any).fullUrl = urlToCheck;
-        }
-      }
-    }
+    // Use display value as search term (no special handling needed for non-links)
+    const searchTerm = displayValue;
 
     let totalMentions = 0;
     const mentionsByModel: { [modelId: string]: number } = {};
@@ -350,7 +543,7 @@ function calculateMentions(
 
     // Count mentions
     for (const answer of answers) {
-      const { count, firstAppearanceOrder, excerpts } = countMentionsInAnswer(searchTerm, answer.text, currentDate);
+      const { count, firstAppearanceOrder, excerpts } = countMentionsInAnswer(searchTerm, answer.text, currentDate, answer.promptId);
 
       // Only count mentions from the current date's answers
       if (!answer.date || answer.date === currentDate) {
@@ -386,13 +579,6 @@ function calculateMentions(
     item.bots = botsWithMentions.join(',');
     item.botCount = botsWithMentions.length;
     item.uniqueModelCount = botsWithMentions.length;
-
-    // Restore full URL if it was preserved
-    if ((item as any).fullUrl) {
-      item.link = (item as any).fullUrl;
-      item.value = (item as any).fullUrl;
-      delete (item as any).fullUrl;
-    }
   }
 
   // Step 2: Calculate mentions as percentage
@@ -479,19 +665,35 @@ export async function enrichCalculateMentions(project: string, targetDate: strin
         const allQuestions = questionDirs.filter(d => d.isDirectory() && d.name !== AGGREGATED_DIR_NAME);
         for (const q of allQuestions) {
           const questionCaptureDir = path.join(CAPTURE_DIR(project), q.name);
-          const questionAnswers = await readAnswers(questionCaptureDir, currentDate, projectModelsForAnswer);
+          const questionAnswers = await readAnswers(questionCaptureDir, currentDate, projectModelsForAnswer, q.name);
           answers.push(...questionAnswers);
         }
       } else {
         // Normal question
         const captureDir = path.join(CAPTURE_DIR(project), dir.name);
-        answers = await readAnswers(captureDir, currentDate, projectModelsForAnswer);
+        answers = await readAnswers(captureDir, currentDate, projectModelsForAnswer, dir.name);
       }
 
       // calculate
-      for (const arrayType of MAIN_SECTIONS) {
+      for (const arrayType of ENRICHMENT_SECTIONS) {
         if (data[arrayType] && Array.isArray(data[arrayType])) {
           calculateMentions(data[arrayType], answers, currentDate, projectModelsForAnswer);
+
+          // Set default influence values so OSS reports work before the influence step runs.
+          for (const item of data[arrayType]) {
+            if (item.influence === undefined) {
+              item.influence = 0;
+            }
+            if (item.influenceByModel === undefined) {
+              item.influenceByModel = {};
+            }
+            if (item.weightedInfluence === undefined) {
+              item.weightedInfluence = 0;
+            }
+            if (item.shareOfVoice === undefined) {
+              item.shareOfVoice = 0;
+            }
+          }
         }
       }
 

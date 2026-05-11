@@ -1,9 +1,8 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { DirentLike } from '../config/types.js';
-import { REPORT_HTML_TEMPLATE_DIR, QUESTIONS_DIR, REPORT_DIR, OUTPUT_DIR, PROJECT_REPORTS_DIR, QUESTION_DATA_COMPILED_DATE_DIR, AGGREGATED_DATA_COMPILED_DATE_DIR } from '../config/paths.js';
-import { ENTITIES_CONFIG, getCategoriesForItemsByType, MAIN_SECTIONS } from '../config/constants-entities.js';
-import { replaceMacrosInTemplate, writeFileAtomic } from './misc-utils.js';
+import { REPORT_HTML_TEMPLATE_DIR, QUESTIONS_DIR, OUTPUT_DIR, QUESTION_DATA_COMPILED_DATE_DIR, AGGREGATED_DATA_COMPILED_DATE_DIR } from '../config/paths.js';
+import { MAIN_SECTIONS } from '../config/constants-entities.js';
 import { logger } from './compact-logger.js';
 import {
   normalizeModelWeights,
@@ -11,12 +10,13 @@ import {
   calculateInfluenceByModel,
   calculateProminence
 } from './influence-calculator.js';
-import { ReportFileManager } from './report-file-manager.js';
-import { loadProjectModelConfigs, readQuestions } from './project-utils.js';
+import { loadProjectModelConfigs, readQuestions, validateAndLoadProject } from './project-utils.js';
 import { QuestionEntry } from '../config/types.js';
-import { getCurrentDateTimeAsStringISO, getProjectNameFromProjectFolder } from '../config/user-paths.js';
 import { ModelType } from './project-utils.js';
-import { getCurrentVersion } from './update-checker.js';
+import { generateEntityPages } from './report-entity-pages.js';
+import { generateSourcePages } from './report-source-pages.js';
+import { generateStaticMainPage } from './report-main-static.js';
+
 // Load enriched data file and parse it
 async function loadEnrichedData(filePath: string): Promise<any> {
   const content = await fs.readFile(filePath, 'utf-8');
@@ -49,15 +49,8 @@ async function mergeItems(project: string, itemsByPrompt: Record<string, any[]>,
           influenceByPrompt: {},
           mentionsByModelByPrompt: {},
           appearanceOrderByPrompt: {},
-          excerptsByModelByPrompt: {}, // Add this to track excerpts by prompt
-          _uniqueMentionsByModel: {} // Track unique mentions per model
+          excerptsByModelByPrompt: {} // Add this to track excerpts by prompt
         });
-        
-        // Initialize unique mentions tracking for first prompt
-        const merged = mergedMap.get(key)!;
-        for (const [modelId, mentions] of Object.entries(item.mentionsByModel || {})) {
-          merged._uniqueMentionsByModel[modelId] = mentions as number;
-        }
       }
       
       const merged = mergedMap.get(key)!;
@@ -79,38 +72,22 @@ async function mergeItems(project: string, itemsByPrompt: Record<string, any[]>,
         merged.excerptsByModelByPrompt[promptId] = item.excerptsByModel;
       }
       
-      // Aggregate mentions - properly handle multiple questions
+      // Aggregate mentions - count REAL mentions across all questions using SUM
       if (promptId !== Object.keys(itemsByPrompt)[0]) {
         // Not the first prompt, so aggregate
-        // For total mentions, we need to properly aggregate without double-counting
-        // Each model should only be counted once across all questions
-        
-        // Track unique mentions by model across all questions
-        if (!merged._uniqueMentionsByModel) {
-          merged._uniqueMentionsByModel = {};
-        }
-        
-        // Update unique mentions for each model (taking max across questions)
-        for (const [modelId, mentions] of Object.entries(item.mentionsByModel || {})) {
-          merged._uniqueMentionsByModel[modelId] = Math.max(
-            merged._uniqueMentionsByModel[modelId] || 0,
-            mentions as number
-          );
-        }
-        
-        // Recalculate total mentions as sum of unique mentions per model
-        merged.mentions = Object.values(merged._uniqueMentionsByModel).reduce((sum: number, count: any) => sum + (count as number), 0);
-        
-        // Keep mentionsByModel as the sum for backward compatibility, but it represents total across questions
+
+        // SUM mentions by model (real count for filtered view)
         for (const [modelId, mentions] of Object.entries(item.mentionsByModel || {})) {
           merged.mentionsByModel[modelId] = (merged.mentionsByModel[modelId] || 0) + (mentions as number);
         }
-        
-        
+
+        // Total mentions = SUM of all mentionsByModel (real total for default view)
+        merged.mentions = Object.values(merged.mentionsByModel)
+          .reduce((sum: number, count: any) => sum + (count as number), 0);
+
         // Aggregate weighted influence
         merged.weightedInfluence = (merged.weightedInfluence || 0) + (item.weightedInfluence || 0);
-        
-        
+
         // Merge trend values (keep the most recent trends)
         if (item.mentionsTrendVals && item.mentionsTrendVals.length > 0) {
           merged.mentionsTrendVals = item.mentionsTrendVals;
@@ -144,9 +121,6 @@ async function mergeItems(project: string, itemsByPrompt: Record<string, any[]>,
       logger.warn(`  Models: ${modelCount}, Questions: ${questionCount}`);
       logger.warn(`  Mentions by model: ${JSON.stringify(item.mentionsByModel)}`);
     }
-    
-    // Clean up internal tracking field
-    delete item._uniqueMentionsByModel;
   });
 
   // Recalculate bots/botCount based on final aggregated mentionsByModel
@@ -163,17 +137,17 @@ async function mergeItems(project: string, itemsByPrompt: Record<string, any[]>,
   mergedArray.forEach(item => {
     if (item.excerptsByModelByPrompt && Object.keys(item.excerptsByModelByPrompt).length > 0) {
       item.excerptsByModel = {};
-      
+
       // For each prompt that has excerpts
       for (const [promptId, excerptsByModel] of Object.entries(item.excerptsByModelByPrompt)) {
         const question = questionsByPrompt[promptId] || promptId;
-        
+
         // For each model in this prompt's excerpts
         for (const [modelId, excerpts] of Object.entries(excerptsByModel as any)) {
           if (!item.excerptsByModel[modelId]) {
             item.excerptsByModel[modelId] = [];
           }
-          
+
           // Add excerpts with question information
           for (const excerpt of excerpts as any[]) {
             item.excerptsByModel[modelId].push({
@@ -183,6 +157,18 @@ async function mergeItems(project: string, itemsByPrompt: Record<string, any[]>,
             });
           }
         }
+      }
+
+      // Deduplicate excerpts - keep one per answer (promptId + captureDate) per model
+      // This prevents near-identical excerpts when an entity is mentioned multiple times in one answer
+      for (const [modelId, excerpts] of Object.entries(item.excerptsByModel)) {
+        const seenAnswers = new Set<string>();
+        item.excerptsByModel[modelId] = (excerpts as any[]).filter(excerpt => {
+          const key = `${excerpt.promptId}|${excerpt.captureDate}`;
+          if (seenAnswers.has(key)) return false;
+          seenAnswers.add(key);
+          return true;
+        });
       }
     }
   });
@@ -216,14 +202,7 @@ async function mergeItems(project: string, itemsByPrompt: Record<string, any[]>,
       }
     }
 
-    // Calculate average appearanceOrders (order of appearance, not rank)
-    if (appearanceOrders.length > 0) {
-      item.appearanceOrder = Number((appearanceOrders.reduce((a, b) => a + b, 0) / appearanceOrders.length).toFixed(2));
-    } else {
-      item.appearanceOrder = item.mentions > 0 ? 999 : -1;
-    }
-
-    // Calculate average appearanceOrder by model
+    // Calculate average appearanceOrder by model (average positions across questions)
     item.appearanceOrderByModel = {};
     for (const [modelId, modelAppearanceOrders] of Object.entries(appearanceOrderByModel)) {
       if (modelAppearanceOrders.length > 0) {
@@ -233,6 +212,30 @@ async function mergeItems(project: string, itemsByPrompt: Record<string, any[]>,
       } else if (item.mentionsByModel && item.mentionsByModel[modelId] > 0) {
         item.appearanceOrderByModel[modelId] = 999; // Unknown appearanceOrder
       }
+    }
+
+    // Calculate WEIGHTED AVERAGE appearanceOrder across models
+    // This is consistent with enrich-calculate-appearance-order.ts
+    // Weight by model importance (estimated_mau) so higher-traffic models have more influence
+    if (Object.keys(item.appearanceOrderByModel).length > 0) {
+      let weightedSum = 0;
+      let totalWeight = 0;
+
+      for (const [modelId, position] of Object.entries(item.appearanceOrderByModel)) {
+        if (typeof position === 'number' && position > 0 && position < 999) {
+          const weight = normalizedWeights.get(modelId) || 0;
+          weightedSum += position * weight;
+          totalWeight += weight;
+        }
+      }
+
+      if (totalWeight > 0) {
+        item.appearanceOrder = Number((weightedSum / totalWeight).toFixed(2));
+      } else {
+        item.appearanceOrder = item.mentions > 0 ? 999 : -1;
+      }
+    } else {
+      item.appearanceOrder = item.mentions > 0 ? 999 : -1;
     }
   }
 
@@ -441,79 +444,91 @@ export async function generateAggregateReport(project: string, date: string): Pr
         .sort((a, b) => b.count - a.count);
     }
     
-    // Add linkTypes handling if it exists
-    if (aggregatedData.linkTypes && Array.isArray(aggregatedData.linkTypes)) {
-      const linkTypeModelCounts: Record<string, number> = {};
-      const linkTypeTrendCounts: Record<string, number> = {};
-      
-      for (const linkType of aggregatedData.linkTypes) {
-        // Count by model
-        for (const [modelId, mentions] of Object.entries(linkType.mentionsByModel || {})) {
-          if ((mentions as number) > 0) {
-            linkTypeModelCounts[modelId] = (linkTypeModelCounts[modelId] || 0) + 1;
-          }
-        }
-        
-        // Count by trend
-        const trend = String(linkType.appearanceOrderTrend || -9999);
-        linkTypeTrendCounts[trend] = (linkTypeTrendCounts[trend] || 0) + 1;
-      }
-      
-      // Convert to array format
-      aggregatedData.itemCountPerModel.linkTypes = Object.entries(linkTypeModelCounts)
-        .map(([id, count]) => ({ id, count }))
-        .sort((a, b) => b.count - a.count);
-        
-      aggregatedData.itemCountPerAppearanceOrderTrend.linkTypes = Object.entries(linkTypeTrendCounts)
-        .map(([id, count]) => ({ id, count }))
-        .sort((a, b) => b.count - a.count);
-    }
-    
     // Create output directories and file manager
-    const outputDir = OUTPUT_DIR(project, date);
+    const outputDir = OUTPUT_DIR(project);
 
-    const fileManager = new ReportFileManager({
-      date,
-      outputDir    
-    });
-
-    // Generate the data file
-    const dataContent = `// AUTO-GENERATED AGGREGATE: ${new Date().toISOString()}
-// Aggregated from prompts: ${validPrompts.join(', ')}
-window.AppDataAggregate${date.replace(/-/g, '')} = ${JSON.stringify(aggregatedData, null, 2)};
-window.AppData = window.AppDataAggregate${date.replace(/-/g, '')};`;
-
-  await fileManager.writeDataFile(dataContent, `${date}-data.js`);
-
-    // Write all report files with replacements using file manager
-    await fileManager.writeReportFiles([
-      {
-        filename: 'index.html',
-        replacements: {
-          '{{REPORT_TITLE}}': aggregatedData.report_title || project,
-          '{{PROJECT_NAME}}': getProjectNameFromProjectFolder(project),
-          '{{REPORT_DATE}}': date,
-            //      '{{REPORT_QUESTION_ID}}': 'aggregate',
-          '{{REPORT_DATE_WITHOUT_DASHES}}': date.replace(/-/g, ''),
-          '{{REPORT_CREATED_AT_DATETIME}}': getCurrentDateTimeAsStringISO(),
-          '{{REPORT_ENGINE_VERSION}}': getCurrentVersion()   
-    
-        }
-      },
-      {
-        filename: 'app.js',
-        replacements: {
-          '{{ENTITIES_CONFIG_JSON}}': JSON.stringify(ENTITIES_CONFIG)
-        }
-      }
-    ]);
+    await fs.mkdir(outputDir, { recursive: true });
 
 
-    // copy answers file 
+    // copy answers file
     const answersFile = path.join(AGGREGATED_DATA_COMPILED_DATE_DIR(project, date), `${date}-answers.js`);
     await fs.copyFile(answersFile, path.join(outputDir, `${date}-answers.js`));
     logger.info(`Copied answers file ${answersFile} to ${path.join(outputDir, `${date}-answers.js`)}`);
-    
+
+    // Build base URL for absolute canonical URLs in entity/source pages
+    const projectConfig = await validateAndLoadProject(project, true);
+    const publishedUrlBase = projectConfig?.published_url_base || null;
+    const baseUrl = publishedUrlBase
+      ? `${publishedUrlBase}${encodeURIComponent(project)}/`
+      : null;
+
+    // Generate entity pages for aggregate report
+    try {
+      const aggregatedDataFile = path.join(AGGREGATED_DATA_COMPILED_DATE_DIR(project, date), `${date}-data.js`);
+      const entityPagesGenerated = await generateEntityPages({
+        project,
+        questionId: '_aggregate',
+        targetDate: date,
+        outputDir,
+        templateDir: REPORT_HTML_TEMPLATE_DIR,
+        enrichedDataFile: aggregatedDataFile,
+        baseUrl
+      });
+      if (entityPagesGenerated > 0) {
+        logger.info(`Generated ${entityPagesGenerated} entity pages for aggregate report`);
+      }
+    } catch (entityError) {
+      logger.warn(`Could not generate entity pages for aggregate: ${entityError instanceof Error ? entityError.message : String(entityError)}`);
+    }
+
+    // Generate source domain pages for aggregate report
+    try {
+      const aggregatedDataFile = path.join(AGGREGATED_DATA_COMPILED_DATE_DIR(project, date), `${date}-data.js`);
+      const sourcePagesGenerated = await generateSourcePages({
+        project,
+        questionId: '_aggregate',
+        targetDate: date,
+        outputDir,
+        templateDir: REPORT_HTML_TEMPLATE_DIR,
+        enrichedDataFile: aggregatedDataFile,
+        baseUrl
+      });
+      if (sourcePagesGenerated > 0) {
+        logger.info(`Generated ${sourcePagesGenerated} source pages for aggregate report`);
+      }
+    } catch (sourceError) {
+      logger.warn(`Could not generate source pages for aggregate: ${sourceError instanceof Error ? sourceError.message : String(sourceError)}`);
+    }
+
+    // Generate static SEO-friendly main page for aggregate report
+    try {
+      const aggregatedDataFile = path.join(AGGREGATED_DATA_COMPILED_DATE_DIR(project, date), `${date}-data.js`);
+
+      // Build questions list with counts for the static page
+      const questionsForStatic = questions.map(q => ({
+        id: q.folder,
+        text: q.question,
+        brandsCount: questionsData.questions.find((qd: { id: string }) => qd.id === q.folder)?.uniqueBrands || 0,
+        domainsCount: questionsData.questions.find((qd: { id: string }) => qd.id === q.folder)?.uniqueDomains || 0
+      }));
+
+      const staticResult = await generateStaticMainPage({
+        project,
+        targetDate: date,
+        outputDir,
+        templateDir: REPORT_HTML_TEMPLATE_DIR,
+        enrichedDataFile: aggregatedDataFile,
+        isAggregate: true,
+        questions: questionsForStatic
+      });
+      if (staticResult) {
+        logger.info(`Generated static main page for aggregate report`);
+      }
+    } catch (staticError) {
+      logger.warn(`Could not generate static main page for aggregate: ${staticError instanceof Error ? staticError.message : String(staticError)}`);
+      // Don't fail if static page generation fails
+    }
+
     logger.info(`Aggregate report generated successfully at:`);
     logger.info(`  - ${outputDir}/index.html`);
 

@@ -7,10 +7,10 @@
  * - totalTimeSaved: Estimated time saved by automation
  * - totalCounts: Count per category
  * - itemCountPerModel: Items mentioned by each model per category
- * - itemCountPerAppearanceOrderTrend: Trend distribution (EE only)
+ * - itemCountPerAppearanceOrderTrend: Trend distribution
  */
 
-// Trend indicators (must match trends.ts in EE)
+// Trend indicators (must match config/trends.ts)
 const TRENDS = {
   UP: 10,          // "↑" - rising trend
   DOWN: -1,        // "↓" - falling trend
@@ -54,7 +54,6 @@ export function addReportMetadata(
   // Add totalCounts object with counts for each array type
   data.totalCounts = {
     bots: data.bots ? data.bots.length : 0,
-    linkTypes: data.linkTypes ? data.linkTypes.length : 0,
     ...ARRAY_NAMES.reduce((counts, name) => {
       counts[name] = data[name] ? data[name].length : 0;
       return counts;
@@ -85,27 +84,11 @@ export function addReportMetadata(
       }
     }
 
-    // Convert to array format expected by app.js
+    // Convert to array format used by report metadata.
     data.itemCountPerModel[arrayName] = Object.entries(botCounts)
       .map(([botId, count]) => ({ id: botId, count }))
       .sort((a, b) => b.count - a.count);
   }
-
-  // Add itemCountPerModel for linkTypes
-  const linkTypes = data.linkTypes || [];
-  const linkTypeBotCounts: { [botId: string]: number } = {};
-  for (const linkType of linkTypes) {
-    if (linkType.mentionsByModel) {
-      for (const [botId, mentions] of Object.entries(linkType.mentionsByModel)) {
-        if ((mentions as number) > 0) {
-          linkTypeBotCounts[botId] = (linkTypeBotCounts[botId] || 0) + 1;
-        }
-      }
-    }
-  }
-  data.itemCountPerModel.linkTypes = Object.entries(linkTypeBotCounts)
-    .map(([botId, count]) => ({ id: botId, count }))
-    .sort((a, b) => b.count - a.count);
 
   // Add itemCountPerAppearanceOrderTrend - count items by their actual appearanceOrder trend values
     data.itemCountPerAppearanceOrderTrend = {};
@@ -120,21 +103,9 @@ export function addReportMetadata(
         trendCounts[trendId] = (trendCounts[trendId] || 0) + 1;
       }
 
-      // Convert to array format expected by app.js
+      // Convert to array format used by report metadata.
       data.itemCountPerAppearanceOrderTrend[arrayName] = Object.entries(trendCounts)
         .map(([id, count]) => ({ id, count }))
         .sort((a, b) => b.count - a.count); // Sort by count descending
     }
-
-    // Add linkTypes trend
-    const linkTypesTrendCounts: { [trendId: string]: number } = {};
-    for (const linkType of linkTypes) {
-      const trend = linkType.appearanceOrderTrend || TRENDS.UNKNOWN;
-      const trendId = String(trend);
-      linkTypesTrendCounts[trendId] = (linkTypesTrendCounts[trendId] || 0) + 1;
-    }
-    data.itemCountPerAppearanceOrderTrend.linkTypes = Object.entries(linkTypesTrendCounts)
-      .map(([id, count]) => ({ id, count }))
-      .sort((a, b) => b.count - a.count);
-
 }

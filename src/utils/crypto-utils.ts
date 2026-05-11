@@ -85,8 +85,8 @@ export function decryptCredentialsFile(credFile: CredentialsFile): Record<string
   for (const [key, encryptedData] of Object.entries(credFile.credentials)) {
     try {
       apiKeys[key] = decryptApiKey(encryptedData);
-    } catch (error) {
-      console.error(`Failed to decrypt ${key}:`, error.message);
+    } catch {
+      // Callers report a user-facing warning with the credentials file path.
     }
   }
 

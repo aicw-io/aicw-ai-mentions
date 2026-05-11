@@ -20,11 +20,6 @@ export async function showUserDataLocation(): Promise<void> {
   logger.info('Location of your data on this computer:');
   output.writeLine(`\n${colorize(USER_DATA_DIR, 'green')}\n`);
 
-  // Show custom user name if configured
-  if (process.env.AICW_USER_NAME) {
-    logger.info(`User: ${process.env.AICW_USER_NAME}`);
-  }
-
   // Show platform-specific command to open the folder
   const plat = platform();
   logger.log('\nTo open this folder (copy paste to the Terminal/Console app):');

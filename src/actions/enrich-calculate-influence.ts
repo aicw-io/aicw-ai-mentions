@@ -5,7 +5,7 @@ import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
 import { logger } from '../utils/compact-logger.js';
 import { isInterrupted } from '../utils/delay.js';
-import { MAIN_SECTIONS } from '../config/constants-entities.js';
+import { ENRICHMENT_SECTIONS } from '../config/constants-entities.js';
 import { PipelineCriticalError, createMissingFileError } from '../utils/pipeline-errors.js';
 import {
   loadProjectModelConfigs,
@@ -142,7 +142,7 @@ export async function enrichCalculateInfluence(project: string, targetDate: stri
       const { data, dataKey } = await loadDataJs(files.inputPath);
 
       // calculate
-      for (const arrayType of MAIN_SECTIONS) {
+      for (const arrayType of ENRICHMENT_SECTIONS) {
         if (data[arrayType] && Array.isArray(data[arrayType])) {
           calculateInfluence(data[arrayType], aiModelsForAnswerInProject);
         }

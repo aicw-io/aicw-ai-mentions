@@ -1,20 +1,17 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { QUESTION_DATA_COMPILED_DATE_DIR, REPORT_HTML_TEMPLATE_DIR } from '../config/paths.js';
+import { QUESTION_DATA_COMPILED_DATE_DIR } from '../config/paths.js';
 import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { logger } from '../utils/compact-logger.js';
-import { replaceMacrosInTemplate, waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
+import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
 import { getProjectNameFromCommandLine, getTargetDateFromProjectOrEnvironment, loadProjectModelConfigs, ModelType, readQuestions, validateAndLoadProject } from '../utils/project-utils.js';
 import { writeFileAtomic } from '../utils/misc-utils.js';
 import { PipelineCriticalError } from '../utils/pipeline-errors.js';
 import { MAIN_SECTIONS } from '../config/constants-entities.js';
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
-import { getCurrentDateTimeAsString, MIN_VALID_OUTPUT_DATA_SIZE } from '../config/user-paths.js';
+import { getCurrentDateTimeAsString } from '../config/user-paths.js';
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
-
-// Path to data.js template
-const DATA_TEMPLATE_PATH = path.join(REPORT_HTML_TEMPLATE_DIR, 'data.js');
 
 /**
  * Main function to create initial data files from template
@@ -22,15 +19,6 @@ const DATA_TEMPLATE_PATH = path.join(REPORT_HTML_TEMPLATE_DIR, 'data.js');
 export async function dataFilePrepare(project: string, targetDate: string): Promise<void> {
 
   logger.info(`Initializing "${targetDate}-data.js" files for project: ${project}`);
-
-  // Read template
-  let template: string;
-  try {
-    template = await fs.readFile(DATA_TEMPLATE_PATH, 'utf-8');
-    logger.debug(`Loaded template from: ${DATA_TEMPLATE_PATH}`);
-  } catch (error) {
-    throw new Error(`Failed to read template file: ${DATA_TEMPLATE_PATH}`);
-  }
 
   const questions = await readQuestions(project);
 
@@ -74,15 +62,18 @@ export async function dataFilePrepare(project: string, targetDate: string): Prom
         estimated_mau: m.estimated_mau || 0
       })));      
 
-      const filled = await replaceMacrosInTemplate(template, {
-        '{{REPORT_QUESTION}}': question.question,
-        '{{REPORT_DATE}}': targetDate,
-        '{{REPORT_QUESTION_ID}}': question.folder,
-        '{{REPORT_CREATED_AT_DATETIME}}': getCurrentDateTimeAsString(),
-        '{{REPORT_DATE_WITHOUT_DASHES}}': dateWithoutDashes,
-        '{{MAIN_SECTIONS_JSON}}': MAIN_SECTIONS.map(entity => `"${entity}":[]\n`).join(','),
-        '{{AI_MODELS_JSON}}': projectAIModelsAsJson
-      });
+      const data: Record<string, unknown> = {
+        report_question: question.question,
+        report_date: targetDate,
+        report_question_id: question.folder,
+        report_created_at: getCurrentDateTimeAsString(),
+        bots: JSON.parse(projectAIModelsAsJson)
+      };
+      for (const sectionName of MAIN_SECTIONS) {
+        data[sectionName] = [];
+      }
+
+      const filled = `window.AppData${dateWithoutDashes} = ${JSON.stringify(data, null, 2)};\n`;
 
       // Write data file
       await writeFileAtomic(dataFile, filled);

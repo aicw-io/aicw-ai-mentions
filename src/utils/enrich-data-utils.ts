@@ -73,6 +73,7 @@ export interface AnswerData {
   text: string;
   modelId: string;
   date?: string;
+  promptId?: string;  // Question folder name for answer lookup
 }
 
 /**
@@ -330,7 +331,7 @@ export async function markItemAsAISourced(item: any, attrName: string) {
 /**
  * Normalize computed/aggregated influences using market share approach
  * Sum of all influences = 1.0 (100%)
- * Used for sections that aggregate data from multiple sources (linkTypes, linkDomains)
+ * Used for sections that aggregate data from multiple sources, such as linkDomains.
  *
  * Different from normalizeInfluences() which divides by MAX for relative ranking.
  * This function ensures all items' influences sum to 100% (market share semantics).

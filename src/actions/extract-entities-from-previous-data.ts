@@ -20,7 +20,7 @@ import { QUESTIONS_DIR, QUESTION_DATA_COMPILED_DATE_DIR } from '../config/paths.
 import { AGGREGATED_DIR_NAME, MAX_PREVIOUS_DATES } from '../config/constants.js';
 import { MAIN_SECTIONS } from '../config/constants-entities.js';
 import { logger } from '../utils/compact-logger.js';
-import { getEntityTypeFromSectionName, waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
+import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
 import { isInterrupted } from '../utils/delay.js';
 import {
   loadDataJs,
@@ -120,8 +120,6 @@ async function mergeEntitiesFromPrevious(
 
     logger.debug(`Section ${section}: ${currentData[section].length} existing entities`);
 
-    const sectionItemType = getEntityTypeFromSectionName(section);
-
     // Scan previous dates (newest to oldest)
     for (const prevFile of previousFiles) {
       try {
@@ -147,10 +145,10 @@ async function mergeEntitiesFromPrevious(
 
           // Add if not already present
           if (normalized && !existingNormalized.has(normalized)) {
-            // Add as normalized object format
+            // Add as normalized object format, preserving type from previous data
             currentData[section].push({
               value: prevValue,
-              type: sectionItemType
+              type: prevItem.type || 'unknown'
             });
 
             existingNormalized.add(normalized);

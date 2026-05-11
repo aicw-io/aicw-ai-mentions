@@ -59,7 +59,6 @@ Thumbs.db
 .history/
 
 # Documentation source files
-docs/
 doc/
 *.md
 !README.md
@@ -83,7 +82,7 @@ temp/
 .tmp/
 
 # Development scripts and configs
-scripts/dev-*
+script/dev-*
 .eslintrc*
 .prettierrc*
 .editorconfig
@@ -179,7 +178,7 @@ build/Release
 # Yarn Integrity file
 .yarn-integrity
 
-# EE directory (commercial license, handled separately if exists)
+# Legacy edition-split directory, if present in a local checkout
 ee/
 
 # Local development only files

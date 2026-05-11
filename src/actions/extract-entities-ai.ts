@@ -7,7 +7,6 @@ import { ModelConfig, getAIAIPresetWithModels } from '../utils/model-config.js';
 import { QUESTIONS_DIR, QUESTION_DATA_COMPILED_DATE_DIR } from '../config/paths.js';
 import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { MAIN_SECTIONS } from '../config/constants-entities.js';
-import { isValidOutputFile as isValidDataJsFile } from '../utils/misc-utils.js';
 import { logger } from '../utils/compact-logger.js';
 import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
 import { createAiClientInstance, callAIWithRetry } from '../utils/ai-caller.js';
@@ -135,9 +134,22 @@ async function mergeEntitiesForAggregate(
             const itemKey = (item.value || item.link || item.keyword || item.organization || item.source || '').toLowerCase();
             if (!itemKey) continue;
 
-            // Keep first occurrence
+            // Keep first occurrence, but merge types from subsequent occurrences
             if (!itemMaps[section].has(itemKey)) {
               itemMaps[section].set(itemKey, { ...item });
+            } else {
+              // Merge unique types from subsequent occurrences
+              const existing = itemMaps[section].get(itemKey);
+              if (item.type && existing.type) {
+                const existingTypes = existing.type.split(',').map((t: string) => t.trim());
+                const newTypes = item.type.split(',').map((t: string) => t.trim());
+                for (const t of newTypes) {
+                  if (!existingTypes.includes(t)) {
+                    existingTypes.push(t);
+                  }
+                }
+                existing.type = existingTypes.join(',');
+              }
             }
           }
         }
@@ -249,18 +261,23 @@ export async function extractEntities(project: string, targetDate: string): Prom
         const promptPath = path.join(compiledDir, promptFile);
         const outputPath = path.join(compiledDir, compiledJsFile);
 
-        // Check if already compiled
-        // Check if the output file exists and is larger than 5 bytes; throw error if it does NOT exist
-        const MIN_EXISTING_FILE_SIZE = 5;
-        const fileExists = await isValidDataJsFile(outputPath, MIN_EXISTING_FILE_SIZE, false);
-        if (!fileExists) {
-          logger.error(`Required data.js file does NOT exist or is too small: ${outputPath}`);
-          throw new PipelineCriticalError(
-            `Required data.js file does NOT exist or is too small: "${outputPath}"`,
-            CURRENT_MODULE_NAME,
-            dirent.name
-          );
+        // Check if already compiled WITH actual brands data (not just file existence)
+        // The data file may exist from project-data-file-create but have empty brands
+        let alreadyCompiled = false;
+        try {
+          const { data: existingData } = await loadDataJs(outputPath);
+          alreadyCompiled = existingData.brands &&
+                            Array.isArray(existingData.brands) &&
+                            existingData.brands.length > 0;
+          if (alreadyCompiled) {
+            logger.info(`Already compiled with ${existingData.brands.length} brands: ${compiledJsFile}, skipping`);
+            continue; // Skip to next question, don't recompile
+          }
+        } catch (error) {
+          // File doesn't exist or can't be loaded - proceed with extraction
+          alreadyCompiled = false;
         }
+        // Otherwise, proceed to compile...
 
         logger.debug(`Compiling prompt from: ${promptPath}`);
         
@@ -362,46 +379,92 @@ export async function extractEntities(project: string, targetDate: string): Prom
           }
         }
 
-        // Normalizing arrays with strings instead of objects
-        // NORMALIZING extracted data by converting arrays of string[] to array of "item" objects [{value, link, type}]
-        logger.debug(`Normalizing extracted data by converting arrays to objects`);
-        for (const arrayType of Object.keys(data)) {
-          // Skip non-entity keys to prevent corrupting metadata fields
-          if (!MAIN_SECTIONS.includes(arrayType as any)) continue;
+        // Type enum mapping for compressed format expansion
+        const TYPE_MAP: Record<number, string> = {
+          1: 'product',
+          2: 'organization',
+          3: 'person',
+          4: 'event'
+        };
 
-          if (Array.isArray(data[arrayType])) {
-            const entityType = getEntityTypeFromSectionName(arrayType);
-            data[arrayType] = data[arrayType]
-            .filter((item: any) => {
-              if (item !== undefined && 
-                typeof item === 'string' &&
-                item.trim() !== '' && item.length > 1){ // at least 2 characters
-                return true;
-              }
-              else {
-                logger.warn(`Skipping item: ${JSON.stringify(item)} because it is undefined, null, empty, or less than 2 characters`);
-                return false;
-              }
-            })
-            .map((item: any) => ({ 
-              value: item,
-              type: entityType
-            }))
+        // Expand type codes to type names (supports multiple types: "2,1" → "organization,product")
+        function expandTypes(t: number | string): string {
+          // Handle single number (backward compatible)
+          if (typeof t === 'number') {
+            return TYPE_MAP[t] || 'unknown';
           }
+          // Handle comma-separated string like "2,1" or single string like "2"
+          if (typeof t === 'string') {
+            return t.split(',')
+              .map(code => TYPE_MAP[parseInt(code.trim(), 10)] || null)
+              .filter(type => type !== null)
+              .join(',') || 'unknown';
+          }
+          return 'unknown';
         }
 
-        // VALIDATION: Check if extraction actually found entities
-        // If extraction ran but all arrays are empty, the pipeline failed silently
-        const hasAnyEntities = MAIN_SECTIONS.some(section =>
-          data[section] && Array.isArray(data[section]) && data[section].length > 0
-        );
+        // Expand and normalize brands in one step: {"v":"Name","t":"2,1"} → {"value":"Name","type":"organization,product"}
+        logger.debug(`Expanding and normalizing brands data`);
+        if (Array.isArray(data['brands'])) {
+          data['brands'] = data['brands']
+            .map((item: any) => {
+              // Handle compressed format {v, t} - direct to final format
+              if (item.v !== undefined && item.t !== undefined) {
+                return {
+                  value: item.v,
+                  type: expandTypes(item.t)
+                };
+              }
+              // Handle legacy {value, type} format (existing data)
+              if (typeof item === 'object' && item.value !== undefined) {
+                return {
+                  value: item.value,
+                  type: item.type || expandTypes(item.t) || 'unknown'
+                };
+              }
+              // Handle legacy string format
+              if (typeof item === 'string') {
+                return { value: item, type: 'unknown' };
+              }
+              // Unknown format - return as-is for filtering
+              return item;
+            })
+            .filter((item: any) => {
+              // Filter out invalid items
+              if (item.value && typeof item.value === 'string' && item.value.trim() !== '' && item.value.length > 1) {
+                return true;
+              }
+              logger.warn(`Skipping invalid brand: ${JSON.stringify(item)}`);
+              return false;
+            });
+        }
+
+        // Normalize links array if present (unchanged logic)
+        if (Array.isArray(data['links'])) {
+          const entityType = getEntityTypeFromSectionName('links');
+          data['links'] = data['links']
+            .filter((item: any) => {
+              const value = typeof item === 'string' ? item : item?.value;
+              return value && typeof value === 'string' && value.trim() !== '' && value.length > 1;
+            })
+            .map((item: any) => {
+              if (typeof item === 'string') {
+                return { value: item, type: entityType };
+              }
+              return { value: item.value, type: item.type || entityType };
+            });
+        }
+
+        // VALIDATION: Check if extraction actually found brands
+        // If extraction ran but brands array is empty, the pipeline failed silently
+        const hasAnyEntities = data['brands'] && Array.isArray(data['brands']) && data['brands'].length > 0;
 
         if (!hasAnyEntities) {
           throw new PipelineCriticalError(
-            `Entity extraction completed but found ZERO entities in all sections for ${dirent.name}. ` +
+            `Entity extraction completed but found ZERO brands for ${dirent.name}. ` +
             `This indicates extraction failed or AI returned empty results. ` +
             `Check the AI response and extraction prompts. ` +
-            `Cannot proceed with empty entity arrays.`,
+            `Cannot proceed with empty brands array.`,
             CURRENT_MODULE_NAME,
             dirent.name
           );

@@ -11,7 +11,6 @@ import { writeFileAtomic } from '../utils/misc-utils.js';
 import { removeTrackingParams } from '../utils/url-utils.js';
 import { cleanContentFromAI } from '../utils/content-cleaner.js';
 import { getProjectNameFromCommandLine, getTargetDateFromProjectOrEnvironment, loadProjectModelConfigs, removeNonProjectModels, validateAndLoadProject } from '../utils/project-utils.js';
-import { DEFAULT_OTHER_LINK_TYPE_SHORT_NAME } from '../config/user-paths.js';
 import { createMissingFileError, PipelineCriticalError } from '../utils/pipeline-errors.js';
 import { readQuestions, loadDataJs, saveDataJs } from '../utils/project-utils.js';
 import { ModelType } from '../utils/project-utils.js';
@@ -126,7 +125,6 @@ async function readAnswersFromOriginalFiles(project: string, questionFolder: str
  * Main function to extract links from original answer files
  */
 export async function extractLinks(project: string, targetDate: string): Promise<void> {
-
   logger.info(`Extracting links from original answer.md files for project: ${project}`);
 
   const questions = await readQuestions(project);
@@ -198,8 +196,7 @@ export async function extractLinks(project: string, targetDate: string): Promise
       data.links = extractedLinks.map(url => ({
         type: 'link',
         value: url,
-        link: url,
-        linkType: DEFAULT_OTHER_LINK_TYPE_SHORT_NAME // Will be classified in next steps
+        link: url
       }));
 
       // Save updated data

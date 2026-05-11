@@ -49,8 +49,8 @@ export function cleanUrl(url: string): string {
 }
 
 export function extractDomainFromUrl(url: string): string {
-  url = decodeURIComponent(url);
   try {
+    url = decodeURIComponent(url);
     const urlObj = new URL(url);
     return urlObj.hostname.toLowerCase().replace(/^www\./, '');
   } catch {

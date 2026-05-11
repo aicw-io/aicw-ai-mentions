@@ -16,6 +16,25 @@ export const REGEX_MARKDOWN_LINK = /\[([^\]]+)\]\(([^)]+)\)/g;
 export const REGEX_DOMAIN_PATTERN = /\b([a-z0-9][-a-z0-9]*\.)+[a-z]{2,}\b/gi;
 
 // ============================================================================
+// MARKDOWN LINK STRIPPING
+// ============================================================================
+
+/**
+ * Strip markdown link syntax, keeping only the display text.
+ * - `[text](url)` → `text`
+ * - `[http://example.com](url)` → `http://example.com`
+ *
+ * Useful for preprocessing text before entity extraction to prevent
+ * the LLM from extracting entities from URLs.
+ *
+ * @param text - Text containing markdown links
+ * @returns Text with markdown links replaced by their display text
+ */
+export function stripMarkdownLinks(text: string): string {
+  return text.replace(REGEX_MARKDOWN_LINK, '$1');
+}
+
+// ============================================================================
 // PLACEHOLDER REPLACEMENT TECHNIQUE
 // ============================================================================
 

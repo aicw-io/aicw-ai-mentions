@@ -1,9 +1,0 @@
-Social Media: Truth Social
-order: 4
-description:Social media platform focused on free speech and open discourse
-
-truthsocial.com
-truth.social
-tmtg.com
-nunes.social
-ts.social

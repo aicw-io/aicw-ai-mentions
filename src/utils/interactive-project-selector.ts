@@ -223,7 +223,7 @@ export async function showInteractiveProjectSelector(): Promise<string | null> {
   
   if (projects.length === 0) {
     console.error(colorize('\nNo projects found!', 'red'));
-    console.error(colorize('Create a project first using: aicw project', 'dim'));
+    console.error(colorize('Create a project first using: aicw-ai-mentions new', 'dim'));
     return null;
   }
   

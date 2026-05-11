@@ -59,7 +59,7 @@ export function createMissingFileError(
  * Helper function to create a critical error for missing required data fields.
  *
  * @param questionFolder - The question folder being processed
- * @param dataType - The type of data that's missing (e.g., "Links", "LinkTypes")
+ * @param dataType - The type of data that's missing (e.g., "Links", "SourceDomains")
  * @param previousStep - The step that should have created this data
  * @param stepName - The pipeline step name that encountered the error
  */

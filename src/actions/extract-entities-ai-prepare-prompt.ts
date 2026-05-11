@@ -11,6 +11,7 @@ import { readQuestions } from '../utils/project-utils.js';
 import { PipelineCriticalError } from '../utils/pipeline-errors.js';
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
 import { ModelType } from '../utils/project-utils.js';
+import { stripMarkdownLinks } from '../utils/link-extraction.js';
 // get action name for the current module
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 
@@ -102,7 +103,11 @@ export async function extractEntitiesPreparePrompt(project: string, targetDate: 
       const bot = modelDir.name;
       const answerPath = path.join(answersBase, answerDate, bot, 'answer.md');
       try {
-        const text = await fs.readFile(answerPath, 'utf-8');
+        let text = await fs.readFile(answerPath, 'utf-8');
+        // Strip markdown link URLs before entity extraction
+        // This prevents LLM from extracting entities from citation URLs
+        // e.g., [Notion](https://notion.so) → Notion
+        text = stripMarkdownLinks(text);
         answersSection += await formatSingleAnswer(bot, text);
       } catch (error) {
         // Skip if answer file doesn't exist

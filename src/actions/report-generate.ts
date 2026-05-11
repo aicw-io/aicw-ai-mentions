@@ -2,22 +2,19 @@ import { promises as fs } from 'fs';
 import { DirentLike } from '../config/types.js';
 import path from 'path';
 import { generateAggregateReport } from '../utils/report-aggregation.js';
-import { generateAnswersFile } from './report-generate-answers-file.js';
-import { REPORT_HTML_TEMPLATE_DIR, QUESTIONS_DIR, REPORT_DIR, OUTPUT_DIR, PROJECT_REPORTS_DIR, REPORTS_BY_DATE_DIR, QUESTION_DATA_COMPILED_DATE_DIR, QUESTION_DATA_COMPILED_DIR } from '../config/paths.js';
+import { REPORT_HTML_TEMPLATE_DIR, QUESTIONS_DIR, OUTPUT_DIR, QUESTION_DATA_COMPILED_DATE_DIR } from '../config/paths.js';
 import { AGGREGATED_DIR_NAME } from '../config/constants.js';
-import { writeFileAtomic, drawBox, colorize, waitForEnterInInteractiveMode, replaceMacrosInTemplate } from '../utils/misc-utils.js';
+import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
 import { logger } from '../utils/compact-logger.js';
-import { generateProjectNavigation } from '../utils/report-projects-navigation-generator.js';
-import { ReportFileManager } from '../utils/report-file-manager.js';
 import { getProjectNameFromCommandLine, getTargetDateFromProjectOrEnvironment, validateAndLoadProject } from '../utils/project-utils.js';
-import { getUserProjectQuestionFileContent, getCurrentDateTimeAsStringISO } from '../config/user-paths.js';
-import { createMissingFileError, MissingConfigError, PipelineCriticalError } from '../utils/pipeline-errors.js';
-import { ModelType } from '../utils/project-utils.js';
-import { getCurrentVersion } from '../utils/update-checker.js';
+import { getUserProjectQuestionFileContent } from '../config/user-paths.js';
+import { createMissingFileError, PipelineCriticalError } from '../utils/pipeline-errors.js';
+import { generateEntityPages } from '../utils/report-entity-pages.js';
+import { generateSourcePages } from '../utils/report-source-pages.js';
+import { generateStaticMainPage } from '../utils/report-main-static.js';
 
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
-import { ENTITIES_CONFIG } from '../config/constants-entities.js';
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 
 
@@ -27,20 +24,29 @@ export async function reportGenerate(project: string): Promise<void> {
 }
 
 async function main(projectArg?: string): Promise<void> {
-  const project = await getProjectNameFromCommandLine();
-  await validateAndLoadProject(project);
-  const targetDate = await getTargetDateFromProjectOrEnvironment(project);  
+  const project = projectArg || await getProjectNameFromCommandLine();
+  const projectConfig = await validateAndLoadProject(project);
+  const targetDate = await getTargetDateFromProjectOrEnvironment(project);
+
+  // Get published URL base from project config (for JSON-LD structured data)
+  const publishedUrlBase = projectConfig?.published_url_base || null;  
   
   await logger.initialize(import.meta.url, project);
   logger.info(`Generating reports for project: ${project}, date: ${targetDate}`);
 
   const baseQ: string = QUESTIONS_DIR(project);
-  const outputBase: string = OUTPUT_DIR(project, targetDate);
+  const outputBase: string = OUTPUT_DIR(project);
 
   const questionDirs: DirentLike[] = await fs.readdir(baseQ, { withFileTypes: true }) as DirentLike[];
 
   // Filter to get only actual question directories
   const actualQuestionsDirs = questionDirs.filter(d => d.isDirectory() && d.name !== AGGREGATED_DIR_NAME);
+
+  // Collect all questions for cross-linking in per-question reports
+  const allQuestions: Array<{ id: string; text: string }> = actualQuestionsDirs.map(d => ({
+    id: d.name,
+    text: getUserProjectQuestionFileContent(project, d.name)
+  }));
 
   logger.startProgress(actualQuestionsDirs.length + 1, 'reports'); // +1 for aggregate report
 
@@ -60,13 +66,6 @@ async function main(projectArg?: string): Promise<void> {
     const enrichedDataFile = path.join(compiledDir, `${targetDate}-data.js`);
     const questionContent = getUserProjectQuestionFileContent(project, questionId);
 
-    // Prepare file manager for report operations
-    const reportFileManager = new ReportFileManager({
-      date: targetDate,
-      outputDir,
-      templateDir: REPORT_HTML_TEMPLATE_DIR
-    });
-
     // Check if enriched data file exists
     const hasEnrichedData = await fs.access(enrichedDataFile).then(() => true).catch(() => false);
 
@@ -79,43 +78,9 @@ async function main(projectArg?: string): Promise<void> {
       );
     }
 
-    // Check if report already exists
-    const outputHtmlFile = path.join(outputDir, 'index.html');
-    const reportExists = await fs.access(outputHtmlFile).then(() => true).catch(() => false);
-
     try {
       // Create output directory if it doesn't exist
       await fs.mkdir(outputDir, { recursive: true });
-
-      // Read and process the template index.html
-      await reportFileManager.writeReportFiles(
-        [
-          {
-            "filename": "index.html",
-            "replacements": {
-              "{{REPORT_DATE}}": targetDate,
-              "{{REPORT_DATE_WITHOUT_DASHES}}": targetDate.replace(/-/g, ''),
-              "{{PROJECT_NAME}": project,
-              "{{REPORT_CREATED_AT_DATETIME}}": getCurrentDateTimeAsStringISO(),
-              "{{REPORT_TITLE}}": questionContent,
-              "{{REPORT_ENGINE_VERSION}}": getCurrentVersion()
-            }
-          },
-          {
-            "filename": "app.js",
-              "replacements": {
-                "{{ENTITIES_CONFIG_JSON}}": JSON.stringify(ENTITIES_CONFIG)
-              }
-          }
-        ]        
-      );
-
-      // Write data-static.js file
-      await reportFileManager.writeDataStaticFile();
-
-      // Copy the enriched data file to output directory
-      const outputDataFile = path.join(outputDir, `${targetDate}-data.js`);
-      await fs.copyFile(enrichedDataFile, outputDataFile);
 
       // Copy answers file if it exists
       const answersFile = path.join(compiledDir, `${targetDate}-answers.js`);
@@ -133,6 +98,71 @@ async function main(projectArg?: string): Promise<void> {
       const outputAnswersFile = path.join(outputDir, `${targetDate}-answers.js`);
       await fs.copyFile(answersFile, outputAnswersFile);
       logger.debug(`Copied answers file ${answersFile} to ${outputAnswersFile}`);
+
+      // Build base URL for absolute URLs in JSON-LD structured data
+      const baseUrl = publishedUrlBase
+        ? `${publishedUrlBase}${encodeURIComponent(project)}/${questionId}/`
+        : null;
+
+      // Generate entity pages for brands
+      try {
+        const entityPagesGenerated = await generateEntityPages({
+          project,
+          questionId,
+          targetDate,
+          outputDir,
+          templateDir: REPORT_HTML_TEMPLATE_DIR,
+          enrichedDataFile,
+          baseUrl
+        });
+        if (entityPagesGenerated > 0) {
+          logger.debug(`Generated ${entityPagesGenerated} entity pages for ${dir.name}`);
+        }
+      } catch (entityError) {
+        logger.warn(`Could not generate entity pages for ${dir.name}: ${entityError instanceof Error ? entityError.message : String(entityError)}`);
+        // Don't fail the whole report generation if entity pages fail
+      }
+
+      // Generate source domain pages
+      try {
+        const sourcePagesGenerated = await generateSourcePages({
+          project,
+          questionId,
+          targetDate,
+          outputDir,
+          templateDir: REPORT_HTML_TEMPLATE_DIR,
+          enrichedDataFile,
+          baseUrl
+        });
+        if (sourcePagesGenerated > 0) {
+          logger.debug(`Generated ${sourcePagesGenerated} source pages for ${dir.name}`);
+        }
+      } catch (sourceError) {
+        logger.warn(`Could not generate source pages for ${dir.name}: ${sourceError instanceof Error ? sourceError.message : String(sourceError)}`);
+        // Don't fail the whole report generation if source pages fail
+      }
+
+      // Generate static SEO-friendly main page
+      try {
+        const staticResult = await generateStaticMainPage({
+          project,
+          questionId,
+          targetDate,
+          outputDir,
+          templateDir: REPORT_HTML_TEMPLATE_DIR,
+          enrichedDataFile,
+          isAggregate: false,
+          questionText: questionContent,
+          questions: allQuestions,
+          baseUrl: baseUrl || undefined
+        });
+        if (staticResult) {
+          logger.debug(`Generated static main page for ${dir.name}`);
+        }
+      } catch (staticError) {
+        logger.warn(`Could not generate static main page for ${dir.name}: ${staticError instanceof Error ? staticError.message : String(staticError)}`);
+        // Don't fail if static page generation fails
+      }
 
       // Report generation successful for this question
 

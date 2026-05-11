@@ -8,7 +8,6 @@ import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { writeFileAtomic, drawBox, colorize, waitForEnterInInteractiveMode, replaceMacrosInTemplate } from '../utils/misc-utils.js';
 import { logger } from '../utils/compact-logger.js';
 import { generateProjectNavigation } from '../utils/report-projects-navigation-generator.js';
-import { ReportFileManager } from '../utils/report-file-manager.js';
 import { getProjectNameFromCommandLine, getTargetDateFromProjectOrEnvironment, validateAndLoadProject } from '../utils/project-utils.js';
 import { getUserProjectQuestionFileContent, getCurrentDateTimeAsStringISO } from '../config/user-paths.js';
 
@@ -33,7 +32,7 @@ async function main(projectArg?: string): Promise<void> {
 
 async function showSuccessBox(project:string, targetDate:string): Promise<void> {
     // Display success message in a prominent box
-    const reportPath = path.resolve(OUTPUT_DIR(project, targetDate), 'index.html');
+    const reportPath = path.resolve(OUTPUT_DIR(project), 'index.html');
     const successBox = drawBox([
       '',
       colorize('🎉  REPORT GENERATED SUCCESSFULLY!  🎉', 'bright'),
@@ -42,10 +41,10 @@ async function showSuccessBox(project:string, targetDate:string): Promise<void> 
       colorize(reportPath, 'cyan'),
       '',
       colorize('👀 To View Your Report:', 'yellow'),
-      '  • select ' + colorize('"Reports: run reports server"', 'cyan') + ' from the main menu',
-      '  • or run ' + colorize('aicw serve', 'cyan') + ' to run reports server separately',
+      '  • select ' + colorize('"Open local reports server"', 'cyan') + ' from the main menu',
+      '  • or run ' + colorize('aicw-ai-mentions serve', 'cyan') + ' to run the reports server',
       '',
-      colorize('💡 Tip:', 'yellow') + ' We can run scheduled reports and scans for you, more info at ' + colorize('https://aichatwatch.com/schedule', 'cyan'),
+      colorize('💡 Tip:', 'yellow') + ' Share the static report or export CSVs from the Mentions, Links, and Link Domains tabs.',
       ''
     ], { borderColor: 'green', width: 66 });
   

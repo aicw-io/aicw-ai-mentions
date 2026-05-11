@@ -1,89 +1,81 @@
 {
-  "name": "@aichatwatch/aicw",
-  "version": "1.1.03",
+  "name": "aicw-ai-mentions",
+  "version": "1.2.0",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
-  "description": "AI Chat Watch - Know what AI says about your brand, competitors and industry",
+  "description": "Open-source CLI for tracking how AI assistants mention your brand, products, and competitors",
   "type": "module",
   "bin": {
-    "aicw": "./bin/aicw.js",
-    "aicw-dev": "./bin/aicw-dev.js"
+    "aicw-ai-mentions": "./bin/aicw-ai-mentions.js"
   },
   "files": [
     "bin/",
+    "docs/",
     "dist/",
     "README.md",
-    "LICENSE.md",
-    "NOTICE.md"
+    "LICENSE"
   ],
   "engines": {
     "node": ">=18.0.0"
   },
   "scripts": {
-    "dev:prebuild": "rm -rf dist/ && node scripts/build-link-types.js && node scripts/validate-pipelines.js",
-    "prebuild": "node scripts/build-link-types.js && node scripts/validate-pipelines.js",
-    "postbuild": "node scripts/copy-assets.js",
-    "build": "npm run prebuild && tsc && npm run postbuild",
+    "prebuild": "rimraf dist",
+    "postbuild": "node script/copy-assets.js",
+    "build": "tsc",
     "dev": "tsc --watch",
-    "dev:run": "node bin/aicw-dev.js",
-    "start": "node bin/aicw.js",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:local": "npm run build && node bin/aicw.js help",
-    "link:local": "npm run build && npm link && echo 'aicw command is now available globally'",
-    "link:dev": "npm run build && npm link && npm link aicw && echo 'Development mode enabled with auto-rebuild'",
-    "unlink:local": "npm unlink -g aicw && echo 'aicw command removed'",
-    "prepublishOnly": "npm run build",
-    "clean": "rimraf dist/ .last-build *.tgz",
+    "start": "node bin/aicw-ai-mentions.js",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "test:local": "npm run build && node bin/aicw-ai-mentions.js help",
+    "demo:build": "bash script/build-demo-pages.sh",
+    "demo:pages": "npm run demo:build",
+    "link:local": "npm run build && npm link && echo 'aicw-ai-mentions command is now available globally'",
+    "unlink:local": "npm unlink -g aicw-ai-mentions && echo 'aicw-ai-mentions command removed'",
+    "prepublishOnly": "npm run build && npm test && npm run package:dry",
+    "clean": "rimraf dist/ .last-build *.tgz .tmp/",
     "rebuild": "npm run clean && npm run build",
-    "pack:test": "npm run build && npm pack && echo 'Package created'",
-    "pack:verify": "npm run pack:test",
-    "pack:inspect": "npm run pack:test",
-    "pack:clean": "rimraf aicw-*.tgz && echo 'Cleaned up test packages'",
     "prepack": "npm run build",
-    "package:dry": "npm pack --dry-run"
+    "package:dry": "npm pack --dry-run",
+    "version:patch": "npm version patch --no-git-tag-version",
+    "version:minor": "npm version minor --no-git-tag-version",
+    "version:major": "npm version major --no-git-tag-version"
   },
   "keywords": [
     "ai",
-    "chat",
+    "rankings",
+    "ai-mentions",
     "monitoring",
     "llm",
-    "chatbot",
     "gpt",
     "claude",
     "gemini",
+    "perplexity",
     "ai-tools",
     "cli",
     "openai",
-    "anthropic",
-    "google",
-    "ai chat watch"
+    "agpl"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/aichatwatch/aicw"
+    "url": "https://github.com/aicw-io/aicw-ai-mentions"
   },
-  "homepage": "https://aichatwatch.com",
+  "homepage": "https://github.com/aicw-io/aicw-ai-mentions#readme",
   "bugs": {
-    "url": "https://github.com/aichatwatch/aicw/issues"
+    "url": "https://github.com/aicw-io/aicw-ai-mentions/issues"
   },
   "author": "Evgenii Mironichev",
-  "license": "SEE LICENSE IN LICENSE.md",
+  "license": "AGPL-3.0-only",
   "dependencies": {
     "csv-parse": "^5.5.0",
+    "dotenv": "^16.4.7",
     "fs-extra": "^11.2.0",
     "marked": "^16.0.0",
     "openai": "^4.21.0"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.12",
-    "@types/node": "^20.19.23",
-    "husky": "^8.0.3",
-    "jest": "^29.7.0",
+    "@types/node": "^20.19.24",
     "rimraf": "^5.0.10",
-    "ts-jest": "^29.1.2",
     "typescript": "^5.8.3"
   }
 }

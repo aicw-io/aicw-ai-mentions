@@ -7,14 +7,12 @@ import { QUESTIONS_DIR, QUESTION_DATA_COMPILED_DATE_DIR, PROJECT_DIR } from '../
 import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { waitForEnterInInteractiveMode, writeFileAtomic } from '../utils/misc-utils.js';
 import { logger } from '../utils/compact-logger.js';
-import { LINK_TYPE_NAMES } from '../utils/link-classifier.js';
 import { extractDomainFromUrl } from '../utils/url-utils.js';
 import { cleanContentFromAI } from '../utils/content-cleaner.js';
 import { loadProjectModelConfigs, getTargetDateFromProjectOrEnvironment, getProjectNameFromCommandLine, validateAndLoadProject } from '../utils/project-utils.js';
 import { loadDataJs, saveDataJs, readQuestions } from '../utils/project-utils.js';
 import { PipelineCriticalError, createMissingFileError, createMissingDataError } from '../utils/pipeline-errors.js';
 import { prepareStepFiles } from '../utils/enrich-data-utils.js';
-import { DEFAULT_OTHER_LINK_TYPE_LONG_NAME, DEFAULT_OTHER_LINK_TYPE_SHORT_NAME } from '../config/user-paths.js';
 import { ModelType } from '../utils/project-utils.js';
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
@@ -24,7 +22,7 @@ const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 
 /**
  * Create linkDomains array from classified links by aggregating mentions
- * Adapted from linkTypes mentions calculation - groups by domain instead of linkType
+ * Groups individual source links by domain and aggregates their mentions.
  */
 function createLinkDomainsMentions(sources: any[], models: any[], currentDate: string): any[] {
   logger.debug('Starting linkDomains mentions aggregation');
@@ -41,18 +39,14 @@ function createLinkDomainsMentions(sources: any[], models: any[], currentDate: s
 
     if (!domainMap.has(domain)) {
       // Initialize the linkDomain entry
-      const linkType = source.linkType || DEFAULT_OTHER_LINK_TYPE_SHORT_NAME;
-      const linkTypeName = LINK_TYPE_NAMES[linkType] || DEFAULT_OTHER_LINK_TYPE_LONG_NAME;
-
       domainMap.set(domain, {
         type: 'linkDomain',
         code: domain,
         value: domain,
         link: 'https://' + domain,
-        linkType: linkType,
-        linkTypeName: linkTypeName,
         mentions: 0,
         mentionsByModel: {},
+        excerptsByModel: {}, // Aggregated excerpts from all links in this domain
         sources: [], // Keep for subsequent calculations
         bots: new Set<string>(),
         botCount: 0,
@@ -77,6 +71,21 @@ function createLinkDomainsMentions(sources: any[], models: any[], currentDate: s
       source.bots.split(',').forEach((bot: string) => {
         if (bot) domainEntry.bots.add(bot);
       });
+    }
+
+    // Aggregate excerpts from source links
+    if (source.excerptsByModel) {
+      for (const [modelId, excerpts] of Object.entries(source.excerptsByModel)) {
+        if (!domainEntry.excerptsByModel[modelId]) {
+          domainEntry.excerptsByModel[modelId] = [];
+        }
+        // Add link URL to each excerpt for context on source pages
+        const excerptsWithLink = (excerpts as any[]).map(excerpt => ({
+          ...excerpt,
+          sourceLink: source.link || source.value
+        }));
+        domainEntry.excerptsByModel[modelId].push(...excerptsWithLink);
+      }
     }
 
     // Keep track of individual sources for subsequent calculations

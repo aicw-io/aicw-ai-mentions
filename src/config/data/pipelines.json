@@ -2,7 +2,7 @@
   "categories": [
     {
       "id": "project",
-      "name": "AI Tracking Projects",
+      "name": "Perception Scans",
       "icon": "💼"
     },
     {
@@ -11,14 +11,9 @@
       "icon": "🛠️"
     },
     {
-      "id": "tools",
-      "name": "Tools",
-      "icon": "🧰"
-    },
-    {
-        "id": "setup",
-        "name": "Setup",
-        "icon": "🔑"
+      "id": "setup",
+      "name": "Setup",
+      "icon": "🔑"
     },
     {
       "id": "more",
@@ -30,9 +25,11 @@
     {
       "id": "project-new",
       "cmd": "actions/project-new",
-      "name": "create new project",
-      "desc": "Create a new project with AI-generated questions",
-      "pipelines": ["new"],
+      "name": "Create perception scan",
+      "desc": "Create focused questions for a company, product, or market",
+      "pipelines": [
+        "new"
+      ],
       "category": "project",
       "requiresProject": false,
       "requiresConsolePipeReturn": true
@@ -42,7 +39,11 @@
       "cmd": "actions/project-new-prepare-folders",
       "name": "Prepare Questions",
       "desc": "Preparing questions from questions.md file",
-      "pipelines": ["new", "rebuild", "build"],
+      "pipelines": [
+        "new",
+        "rebuild",
+        "build"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -51,7 +52,10 @@
       "cmd": "actions/project-cleanup-compiled-data",
       "name": "Cleanup: remove compiled data",
       "desc": "Removing compiled data (excepts answers)",
-      "pipelines": ["rebuild", "build"],
+      "pipelines": [
+        "rebuild",
+        "build"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -60,16 +64,22 @@
       "cmd": "actions/project-data-file-create",
       "name": "Data file: prepare data files",
       "desc": "Data file: prepare data files",
-      "pipelines": ["build", "rebuild"],
+      "pipelines": [
+        "build",
+        "rebuild"
+      ],
       "category": "project",
       "requiresProject": true
     },
     {
       "id": "fetch-answers-ai",
       "cmd": "actions/fetch-answers-ai",
-      "name": "Fetch Answers",
+      "name": "Ask AI models",
       "desc": "Fetching answers from AI models",
-      "pipelines": ["build"],
+      "pipelines": [
+        "build",
+        "fetch-answers-ai"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -78,7 +88,11 @@
       "cmd": "actions/transform-answers-to-md",
       "name": "Transform Answers to Markdown",
       "desc": "Transform answer.json files to enhanced answer.md with full citations",
-      "pipelines": ["build", "rebuild", "transform-answers"],
+      "pipelines": [
+        "build",
+        "rebuild",
+        "transform-answers"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -87,7 +101,10 @@
       "cmd": "actions/extract-entities-ai-prepare-prompt",
       "name": "Extract entities: prepare prompts",
       "desc": "Extract entities: prepare prompts",
-      "pipelines": ["build", "rebuild"],
+      "pipelines": [
+        "build",
+        "rebuild"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -96,7 +113,10 @@
       "cmd": "actions/extract-entities-ai",
       "name": "Extract Entities: extract entities",
       "desc": "Extract entities: extract entities",
-      "pipelines": ["build", "rebuild"],
+      "pipelines": [
+        "build",
+        "rebuild"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -105,7 +125,21 @@
       "cmd": "actions/extract-links",
       "name": "Extract Links",
       "desc": "Extracting links from original answer files",
-      "pipelines": ["build", "rebuild"],
+      "pipelines": [
+        "build",
+        "rebuild"
+      ],
+      "category": "project",
+      "requiresProject": true
+    },
+    {
+      "id": "verify-links",
+      "cmd": "actions/verify-links",
+      "name": "Verify Links (optional)",
+      "desc": "Optionally filtering invalid and unreachable links",
+      "pipelines": [
+        "verify-links"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -114,7 +148,10 @@
       "cmd": "actions/extract-entities-from-previous-data",
       "name": "Extract Entities: merge from previous dates",
       "desc": "Recovering missing entities from previous complete dates",
-      "pipelines": ["build", "rebuild"],
+      "pipelines": [
+        "build",
+        "rebuild"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -123,34 +160,10 @@
       "cmd": "actions/enrich-get-source-links-for-entities",
       "name": "Get Source Links for Entities",
       "desc": "Extracting source links from citations for entities",
-      "pipelines": ["build", "rebuild"],
-      "category": "project",
-      "requiresProject": true
-    },
-    {
-      "id": "enrich-links-get-type",
-      "cmd": "actions/enrich-links-get-type",
-      "name": "Get Links Type",
-      "desc": "Getting links type using patterns",
-      "pipelines": ["build", "rebuild"],
-      "category": "project",
-      "requiresProject": true
-    },
-    {
-      "id": "enrich-links-get-type-ai",
-      "cmd": "actions/enrich-links-get-type-ai",
-      "name": "AI Link Type",
-      "desc": "AI type for unclassified links",
-      "pipelines": ["build", "rebuild"],
-      "category": "project",
-      "requiresProject": true
-    },
-    {
-      "id": "generate-link-types-array",
-      "cmd": "actions/generate-link-types-array",
-      "name": "Generate linkTypes secion in the data",
-      "desc": "Generating linkTypes section in the data for use by get-link-type action",
-      "pipelines": ["build", "rebuild"],
+      "pipelines": [
+        "build",
+        "rebuild"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -159,7 +172,10 @@
       "cmd": "actions/generate-link-domains-array",
       "name": "Generate linkDomains section in the data",
       "desc": "Generating linkDomains section in the data",
-      "pipelines": ["build", "rebuild"],
+      "pipelines": [
+        "build",
+        "rebuild"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -168,7 +184,10 @@
       "cmd": "actions/enrich-calculate-mentions",
       "name": "Calculate Mentions",
       "desc": "Calculating entity mentions",
-      "pipelines": ["build", "rebuild"],
+      "pipelines": [
+        "build",
+        "rebuild"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -177,7 +196,10 @@
       "cmd": "actions/enrich-calculate-appearance-order",
       "name": "Calculate Appearance Order",
       "desc": "Calculating appearance order",
-      "pipelines": ["build", "rebuild"],
+      "pipelines": [
+        "build",
+        "rebuild"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -186,34 +208,10 @@
       "cmd": "actions/enrich-calculate-influence",
       "name": "Calculate Influence",
       "desc": "Calculating weighted influence",
-      "pipelines": ["build", "rebuild"],
-      "category": "project",
-      "requiresProject": true
-    },
-    {
-      "id": "enrich-link-types-calculate-mentions",
-      "cmd": "actions/enrich-link-types-calculate-mentions",
-      "name": "Calculate LinkTypes Mentions",
-      "desc": "Calculating linkTypes mentions",
-      "pipelines": ["build", "rebuild"],
-      "category": "project",
-      "requiresProject": true
-    },
-    {
-      "id": "enrich-link-types-calculate-appearance-order",
-      "cmd": "actions/enrich-link-types-calculate-appearance-order",
-      "name": "Calculate LinkTypes Appearance Order",
-      "desc": "Calculating linkTypes appearance order",
-      "pipelines": ["build", "rebuild"],
-      "category": "project",
-      "requiresProject": true
-    },
-    {
-      "id": "enrich-link-types-calculate-influence",
-      "cmd": "actions/enrich-link-types-calculate-influence",
-      "name": "Calculate LinkTypes Influence",
-      "desc": "Calculating linkTypes influence",
-      "pipelines": ["build", "rebuild"],
+      "pipelines": [
+        "build",
+        "rebuild"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -222,7 +220,10 @@
       "cmd": "actions/enrich-link-domains-calculate-mentions",
       "name": "Calculate LinkDomains Mentions",
       "desc": "Calculating linkDomains mentions",
-      "pipelines": ["build", "rebuild"],
+      "pipelines": [
+        "build",
+        "rebuild"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -231,25 +232,10 @@
       "cmd": "actions/enrich-link-domains-calculate-influence",
       "name": "Calculate LinkDomains Influence",
       "desc": "Calculating linkDomains influence",
-      "pipelines": ["build", "rebuild"],
-      "category": "project",
-      "requiresProject": true
-    },
-    {
-      "id": "enrich-calculate-trends",
-      "cmd": "actions/enrich-calculate-trends",
-      "name": "Calculate Trends",
-      "desc": "Calculating historical trends",
-      "pipelines": ["build", "rebuild"],
-      "category": "project",
-      "requiresProject": true
-    },
-    {
-      "id": "enrich-generate-links-for-entities",
-      "cmd": "actions/enrich-generate-links-for-entities",
-      "name": "Find Entity URLs",
-      "desc": "Finding website URLs for entities",
-      "pipelines": ["build", "rebuild"],
+      "pipelines": [
+        "build",
+        "rebuild"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -258,7 +244,11 @@
       "cmd": "actions/report-generate-output-cleanup",
       "name": "Cleanup: remove old report files",
       "desc": "Removing old report files for target date",
-      "pipelines": ["build", "rebuild", "rebuild-report-only"],
+      "pipelines": [
+        "build",
+        "rebuild",
+        "rebuild-report-only"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -267,7 +257,11 @@
       "cmd": "actions/report-generate-answers-file",
       "name": "Generate Answers File for use by report",
       "desc": "Generating answers file for use by report",
-      "pipelines": ["build", "rebuild", "rebuild-report-only"],
+      "pipelines": [
+        "build",
+        "rebuild",
+        "rebuild-report-only"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -276,7 +270,11 @@
       "cmd": "actions/report-generate",
       "name": "Report: generate",
       "desc": "Generating HTML report",
-      "pipelines": ["build", "rebuild", "rebuild-report-only"],
+      "pipelines": [
+        "build",
+        "rebuild",
+        "rebuild-report-only"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -285,7 +283,11 @@
       "cmd": "actions/report-generate-project-navigation",
       "name": "Report: generate project navigation",
       "desc": "Generating project navigation",
-      "pipelines": ["build", "rebuild", "rebuild-report-only"],
+      "pipelines": [
+        "build",
+        "rebuild",
+        "rebuild-report-only"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -294,7 +296,11 @@
       "cmd": "actions/report-generate-show-success-message",
       "name": "Report: generate success message",
       "desc": "Generating success message",
-      "pipelines": ["build", "rebuild", "rebuild-report-only"],
+      "pipelines": [
+        "build",
+        "rebuild",
+        "rebuild-report-only"
+      ],
       "category": "project",
       "requiresProject": true
     },
@@ -303,7 +309,9 @@
       "cmd": "setup",
       "name": "Setup: setup API Key",
       "desc": "Configure API keys for accessing AI models",
-      "pipelines": ["setup-api-key"],
+      "pipelines": [
+        "setup-api-key"
+      ],
       "category": "setup",
       "requiresProject": false
     },
@@ -312,16 +320,20 @@
       "cmd": "actions/check-models",
       "name": "Setup: check AI Models",
       "desc": "Test all AI models for deprecation",
-      "pipelines": ["check-models"],
+      "pipelines": [
+        "check-models"
+      ],
       "category": "utility",
       "requiresProject": false
     },
     {
       "id": "report-serve",
       "cmd": "actions/utils/report-serve",
-      "name": "Reports: run reports server",
-      "desc": "Start web server to view reports in browser",
-      "pipelines": ["report-serve"],
+      "name": "Open local reports server",
+      "desc": "Start web server to view perception scan reports",
+      "pipelines": [
+        "report-serve"
+      ],
       "category": "utility",
       "requiresProject": false,
       "runDirectly": true
@@ -331,36 +343,20 @@
       "cmd": "actions/utils/show-user-data-location",
       "name": "show user data folders location",
       "desc": "Show user data folder location",
-      "pipelines": ["show-user-data-location"],
+      "pipelines": [
+        "show-user-data-location"
+      ],
       "category": "utility",
       "requiresProject": false
-    },
-    {
-      "id": "ai-visibility",
-      "cmd": "actions/ai-visibility/ai-visibility",
-      "name": "AI Visibility: Check URL",
-      "desc": "Check if URL is visible to AI",
-      "pipelines": ["ai-visibility"],
-      "category": "tools",
-      "requiresProject": false,
-      "menuItemId": 100
-    },
-    {
-      "id": "demo-reports",
-      "cmd": "demo-reports",
-      "name": "Explore Demo Reports",
-      "desc": "Explore latest demo reports at aichatwatch.com",
-      "pipelines": ["demo-reports"],
-      "category": "more",
-      "requiresProject": false,
-      "menuItemId": 901
     },
     {
       "id": "help",
       "cmd": "help",
       "name": "Help",
       "desc": "Show documentation and available commands",
-      "pipelines": ["help"],
+      "pipelines": [
+        "help"
+      ],
       "category": "more",
       "requiresProject": false,
       "menuItemId": 902
@@ -370,7 +366,9 @@
       "cmd": "license",
       "name": "License",
       "desc": "Show license information",
-      "pipelines": ["license"],
+      "pipelines": [
+        "license"
+      ],
       "category": "more",
       "requiresProject": false,
       "menuItemId": 903
@@ -379,23 +377,23 @@
   "pipelines": [
     {
       "id": "new",
-      "name": "New project",
-      "description": "create a new project",
+      "name": "Scan a company, product, or market",
+      "description": "create focused questions and run a multi-LLM perception scan",
       "category": "project",
       "nextPipeline": "build",
       "requiresApiKeys": false
     },
     {
       "id": "build",
-      "name": "Get new answers and generate report",
-      "description": "get today's AI answers for project, analyze and generate report",
+      "name": "Run scan and generate report",
+      "description": "ask configured AI models, analyze mentions and positions, and generate a report",
       "category": "project",
       "requiresApiKeys": true
     },
     {
       "id": "rebuild",
       "name": "Re-analyze data and generate report",
-      "description": "rebuilds report (may use AI to analyze data if not cached)",
+      "description": "re-analyze existing answers and generate a report",
       "category": "project",
       "requiresApiKeys": true
     },
@@ -404,20 +402,20 @@
       "name": "Re-generate report only",
       "description": "creates report from existing data (answers and citations), no AI is used",
       "category": "project",
-      "requiresApiKeys": true
+      "requiresApiKeys": false
     },
     {
       "id": "transform-answers",
       "name": "Advanced: regenerate answer.md from answer.json",
-      "description": "internal use: transforms answer.json files to enhanced answer.md with full citations",
+      "description": "advanced utility: transforms answer.json files to enhanced answer.md with full citations",
       "category": "project",
       "type": "advanced",
       "requiresApiKeys": false
     },
     {
       "id": "report-serve",
-      "name": "Start local server with reports",
-      "description": "starts web server to view reports in browser locally",
+      "name": "Open local reports server",
+      "description": "starts web server to view perception scan reports locally",
       "category": "utility",
       "requiresApiKeys": false
     },
@@ -429,18 +427,26 @@
       "requiresApiKeys": false
     },
     {
-      "id": "ai-visibility",
-      "name": "AI Visibility: Check URL",
-      "description": "checks if URL is visible to AI",
-      "category": "tools",
-      "requiresApiKeys": false,
-      "menuItemId": 100
-    },
-    {
       "id": "check-models",
       "name": "Check AI Models",
       "description": "checks all AI Models for deprecation",
       "category": "advanced"
+    },
+    {
+      "id": "verify-links",
+      "name": "Verify extracted links",
+      "description": "optional: filters syntactically invalid links, unresolved domains, and confirmed 404/410 pages",
+      "category": "project",
+      "requiresApiKeys": false,
+      "type": "advanced"
+    },
+    {
+      "id": "fetch-answers-ai",
+      "name": "Fetch AI Answers",
+      "description": "Fetch AI answers for a project (standalone command)",
+      "category": "project",
+      "requiresApiKeys": true,
+      "type": "advanced"
     },
     {
       "id": "setup-api-key",
@@ -449,14 +455,6 @@
       "category": "setup",
       "requiresApiKeys": false,
       "menuItemId": 900
-    },
-    {
-      "id": "demo-reports",
-      "name": "Explore Demo Reports",
-      "description": "explore latest demo reports at aichatwatch.com",
-      "category": "more",
-      "requiresApiKeys": false,
-      "menuItemId": 901
     },
     {
       "id": "help",

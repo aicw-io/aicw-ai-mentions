@@ -77,7 +77,7 @@ async function deleteDirectoryContents(dirPath: string): Promise<number> {
  */
 async function cleanOutputDirectory(project: string, targetDate: string): Promise<void> {
   const { validatePathIsSafe } = await import('../utils/misc-utils.js');
-  const outputDir = OUTPUT_DIR(project, targetDate);
+  const outputDir = OUTPUT_DIR(project);
 
   logger.info(`Cleaning report output directory: ${outputDir}`);
 

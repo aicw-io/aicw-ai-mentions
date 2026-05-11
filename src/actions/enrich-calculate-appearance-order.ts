@@ -5,7 +5,7 @@ import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { logger } from '../utils/compact-logger.js';
 import { waitForEnterInInteractiveMode } from '../utils/misc-utils.js';
 import { isInterrupted } from '../utils/delay.js';
-import { MAIN_SECTIONS } from '../config/constants-entities.js';
+import { ENRICHMENT_SECTIONS } from '../config/constants-entities.js';
 import { PipelineCriticalError, createMissingFileError } from '../utils/pipeline-errors.js';
 import {
   EnrichedItem,
@@ -14,6 +14,7 @@ import {
 import { loadDataJs, saveDataJs, loadProjectModelConfigs, validateAndLoadProject } from '../utils/project-utils.js';
 import { getTargetDateFromProjectOrEnvironment, getProjectNameFromCommandLine } from '../utils/project-utils.js';
 import { ModelType } from '../utils/project-utils.js';
+import { normalizeModelWeights } from '../utils/influence-calculator.js';
 
 // get action name for the current module
 import { getModuleNameFromUrl } from '../utils/misc-utils.js';
@@ -23,9 +24,15 @@ const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 /**
  * Calculate appearance order for items
  * This converts character positions to ordinal positions (1st, 2nd, 3rd, etc.)
+ *
+ * The overall appearanceOrder uses WEIGHTED AVERAGE based on model importance (MAU).
+ * Individual per-model positions are preserved in appearanceOrderByModel for filtering.
  */
 function calculateAppearanceOrder(items: EnrichedItem[], models: any[]): void {
   if (!Array.isArray(items)) return;
+
+  // Get normalized model weights for weighted average calculation
+  const normalizedWeights = normalizeModelWeights(models);
 
   // Step 1: Collect first appearance order (character position) for each item in each model
   const firstAppearanceOrderByModel: Map<string, Map<any, number>> = new Map();
@@ -60,17 +67,27 @@ function calculateAppearanceOrder(items: EnrichedItem[], models: any[]): void {
     });
   }
 
-  // Step 3: Calculate average appearance order for items
+  // Step 3: Calculate WEIGHTED AVERAGE appearance order for items
+  // Weight by model importance (estimated_mau) so higher-traffic models have more influence
   for (const item of items) {
     if (item.appearanceOrderByModel && Object.keys(item.appearanceOrderByModel).length > 0) {
-      const positions = Object.values(item.appearanceOrderByModel)
-        .filter((p): p is number => typeof p === 'number' && p > 0);
+      // Calculate weighted average across models
+      let weightedSum = 0;
+      let totalWeight = 0;
 
-      if (positions.length > 0) {
-        // Use minimum position (earliest appearance across all models)
-        item.appearanceOrder = Math.min(...positions);
+      for (const [modelId, position] of Object.entries(item.appearanceOrderByModel)) {
+        if (typeof position === 'number' && position > 0 && position < 999) {
+          const weight = normalizedWeights.get(modelId) || 0;
+          weightedSum += position * weight;
+          totalWeight += weight;
+        }
+      }
+
+      if (totalWeight > 0) {
+        // Weighted average appearance order
+        item.appearanceOrder = Number((weightedSum / totalWeight).toFixed(2));
       } else {
-        item.appearanceOrder = 999; // Not mentioned = very high position number
+        item.appearanceOrder = 999; // Not mentioned in any weighted model
       }
     } else {
       // Initialize appearanceOrderByModel if missing
@@ -139,7 +156,7 @@ export async function enrichCalculateAppearanceOrder(project: string, targetDate
       const { data, dataKey } = await loadDataJs(files.inputPath);
 
       // calculate
-      for (const arrayType of MAIN_SECTIONS) {
+      for (const arrayType of ENRICHMENT_SECTIONS) {
         if (data[arrayType] && Array.isArray(data[arrayType])) {
           calculateAppearanceOrder(data[arrayType], projectModels);
         }

@@ -1,8 +1,0 @@
-Social Media: X/Twitter
-order: 4
-description:X (formerly Twitter) social media platform for microblogging and real-time conversations
-
-twitter.com
-twimg.com
-tweetdeck.
-periscope.tv

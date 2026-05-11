@@ -1,27 +1,15 @@
 {
-    "name": "Foundation Models",
-    "description": "Foundation LLMs (Llama, Qwen, Deepseek)(via OpenRouter, free) + o4-mini for analysis(paid)",
-    "models": {
-        "get_answer": [
-            "or_meta_llama_3_3_70b",
-            "or_qwen_32b",
-            "or_deepseek_chat_v3",
-            "or_google_gemini_2_0_flash_exp"
-        ],
-        "extract_entities": [
-            "or_openai_gpt_4o_mini"
-        ],
-        "get_link_type": [
-            "or_openai_gpt_4o_mini"
-        ],
-        "generate-links-for-entities": [
-            "or_openai_gpt_4o_mini"
-        ],
-        "generate_similar_for_entities": [
-            "or_openai_gpt_4o_mini"
-        ],
-        "generate_summary": [
-            "or_openai_gpt_4o_mini"
-        ]
-    }
+  "name": "Foundation Models",
+  "description": "Foundation LLMs (Llama, Qwen, Deepseek)(via OpenRouter, free) + o4-mini for analysis(paid)",
+  "models": {
+    "get_answer": [
+      "or_meta_llama_3_3_70b",
+      "or_qwen_32b",
+      "or_deepseek_chat_v3",
+      "or_google_gemini_2_0_flash_exp"
+    ],
+    "extract_entities": [
+      "or_openai_gpt_4o_mini"
+    ]
+  }
 }

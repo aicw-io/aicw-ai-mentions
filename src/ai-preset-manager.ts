@@ -5,7 +5,7 @@ import { ModelConfig } from './utils/model-config.js';
 import { logger } from './utils/compact-logger.js';
 import { PipelineCriticalError } from './utils/pipeline-errors.js';
 import { ModelType } from './utils/project-utils.js';
-export const DEFAULT_PRESET_NAME = 'popular_static_llms';
+export const DEFAULT_PRESET_NAME = 'ai_chats_with_search';
 
 
 
@@ -15,10 +15,6 @@ export interface AIPreset {
   models: {
     [ModelType.GET_ANSWER]: string[];
     [ModelType.EXTRACT_ENTITIES]: string[];
-    [ModelType.GENERATE_LINKS_FOR_ENTITIES]: string[];
-    [ModelType.GET_LINK_TYPE]: string[];
-    [ModelType.GENERATE_SUMMARY]: string[];
-    [ModelType.GENERATE_SIMILAR_FOR_ENTITIES]: string[];
   }
 }
 

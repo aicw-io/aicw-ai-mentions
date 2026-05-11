@@ -42,29 +42,28 @@ function getPackageInfo(): PackageInfo {
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
 
     // Get binary name
-    let binary = 'aicw';
+    let binary = 'aicw-ai-mentions';
     if (packageJson.bin) {
       if (typeof packageJson.bin === 'object') {
         const binNames = Object.keys(packageJson.bin);
         // Filter out dev binaries and get the first one
         const mainBin = binNames.find(name => !name.includes('-dev'));
-        binary = mainBin || 'aicw';
+        binary = mainBin || 'aicw-ai-mentions';
       }
     }
 
     packageInfoCache = {
-      name: packageJson.name || '@aichatwatch/aicw',
+      name: packageJson.name || 'aicw-ai-mentions',
       version: packageJson.version || '0.0.0',
       binary
     };
 
     return packageInfoCache;
   } catch (error) {
-    // Return defaults if package.json can't be read
     return {
-      name: '@aichatwatch/aicw',
+      name: 'aicw-ai-mentions',
       version: '0.0.0',
-      binary: 'aicw'
+      binary: 'aicw-ai-mentions'
     };
   }
 }
@@ -77,14 +76,14 @@ export function getCurrentVersion(): string {
 }
 
 /**
- * Get package name from package.json (handles both EE and non-EE versions)
+ * Get package name from package.json
  */
 export function getPackageName(): string {
   return getPackageInfo().name;
 }
 
 /**
- * Get binary name from package.json (handles both EE and non-EE versions)
+ * Get binary name from package.json
  */
 export function getBinaryName(): string {
   return getPackageInfo().binary;
@@ -95,7 +94,6 @@ export function getBinaryName(): string {
  */
 function fetchLatestVersion(packageName: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    // Encode package name for URL (handles scoped packages like @aichatwatch/aicw)
     const encodedPackageName = packageName.replace('/', '%2F');
     const url = `https://registry.npmjs.org/${encodedPackageName}`;
 
@@ -291,5 +289,5 @@ export function getUpdateNotification(): string | null {
   }  
 
   const binaryName = getBinaryName();
-  return `ℹ️  Update available: ${cached.currentVersion} → ${cached.latestVersion}\n   Run '${binaryName} update' to upgrade`;
+  return `ℹ️  Update available: ${cached.currentVersion} → ${cached.latestVersion}\n   Update with: npm install -g ${cached.packageName}@latest`;
 }

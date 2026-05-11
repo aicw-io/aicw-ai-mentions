@@ -44,7 +44,7 @@ const ERROR_SOLUTIONS: Record<ErrorCode, ErrorSolution> = {
   [ErrorCode.NO_API_KEY]: {
     description: 'No API key found',
     steps: [
-      'Run "aicw setup" to configure your API key',
+      'Run "aicw-ai-mentions setup-api-key" to configure your API key',
       'Or set the OPENROUTER_API_KEY environment variable',
       'Get a free API key at https://openrouter.ai/keys'
     ]
@@ -53,7 +53,7 @@ const ERROR_SOLUTIONS: Record<ErrorCode, ErrorSolution> = {
     description: 'The API key appears to be invalid',
     steps: [
       'Check that your API key is entered correctly',
-      'Run "aicw setup" to re-enter your API key',
+      'Run "aicw-ai-mentions setup-api-key" to re-enter your API key',
       'Verify your key at https://openrouter.ai/keys'
     ]
   },
@@ -69,8 +69,8 @@ const ERROR_SOLUTIONS: Record<ErrorCode, ErrorSolution> = {
     description: 'The specified project does not exist',
     steps: [
       'Check the project name spelling',
-      'Run "aicw" to see available projects',
-      'Create a new project with "aicw setup <ProjectName>"'
+      'Run "aicw-ai-mentions" to see available projects',
+      'Create a new project with "aicw-ai-mentions new <ProjectName>"'
     ]
   },
   [ErrorCode.INVALID_PROJECT_NAME]: {
@@ -86,7 +86,7 @@ const ERROR_SOLUTIONS: Record<ErrorCode, ErrorSolution> = {
     steps: [
       'Choose a different project name',
       'Or delete the existing project first',
-      'Run "aicw" to see all projects'
+      'Run "aicw-ai-mentions" to see all projects'
     ]
   },
   [ErrorCode.PERMISSION_DENIED]: {
@@ -102,7 +102,7 @@ const ERROR_SOLUTIONS: Record<ErrorCode, ErrorSolution> = {
     steps: [
       'Free up some disk space',
       'Reports can be large - ensure at least 100MB free',
-      'Consider cleaning old reports with "aicw clean"'
+      'Consider cleaning old reports with "aicw-ai-mentions clean"'
     ]
   },
   [ErrorCode.FILE_NOT_FOUND]: {

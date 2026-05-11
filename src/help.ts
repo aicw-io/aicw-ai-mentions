@@ -8,7 +8,7 @@ import { getPackageRoot } from './config/user-paths.js';
 import { colorize } from './utils/misc-utils.js';
 
 async function main() {
-  console.log(colorize('\n📚 AI Chat Watch - Help & Documentation', 'bright'));
+  console.log(colorize('\n📚 aicw-ai-mentions - Help & Documentation', 'bright'));
   console.log(colorize('━'.repeat(50), 'dim'));
 
   // Read and display README.md

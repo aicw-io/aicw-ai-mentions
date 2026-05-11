@@ -5,8 +5,6 @@
 
 import { promises as fs } from 'fs';
 import { dirname, join } from 'path';
-import { homedir } from 'os';
-import { randomBytes } from 'crypto';
 
 // ANSI color codes
 export const LOG_COLOR = {
@@ -159,9 +157,10 @@ export class OutputManager {
     const verbosity = process.env.AICW_VERBOSITY || process.env.AICW_LOG_LEVEL || 'normal';
     this.setVerbosity(verbosity);
 
-    // Create log file path
+    // Create log file path inside the configured aicw data directory.
     const date = new Date().toISOString().split('T')[0];
-    const logDir = join(homedir(), '.aicw', 'logs', date);
+    const { USER_LOGS_DIR } = await import('../config/user-paths.js');
+    const logDir = join(USER_LOGS_DIR, date);
     const logName = project ? `${operation}-${project}.log` : `${operation}.log`;
     const logPath = join(logDir, logName);
 

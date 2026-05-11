@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO Meta Tags -->
+    <title>{{DOMAIN_NAME}} - Link Domain Analysis | {{PROJECT_NAME}}</title>
+    <meta name="description" content="{{DOMAIN_NAME}} cited {{DOMAIN_MENTIONS}} times by AI models. Rank #{{DOMAIN_RANK}} with {{DOMAIN_INFLUENCE}} share of voice across {{BOT_COUNT}} AI assistants.">
+    <meta name="keywords" content="{{DOMAIN_NAME}}, AI citations, link domain, AI recommendations, AI mentions, ChatGPT sources, Gemini, Claude, aicw-ai-mentions">
+    <meta name="author" content="AICW AI Mentions">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="{{DOMAIN_NAME}} - Link Domain Analysis">
+    <meta property="og:description" content="Rank #{{DOMAIN_RANK}} - {{DOMAIN_NAME}} cited {{DOMAIN_MENTIONS}} times with {{DOMAIN_INFLUENCE}} share of voice across {{BOT_COUNT}} AI models.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="{{CANONICAL_URL}}">
+    <meta property="og:site_name" content="AICW AI Mentions">
+    <meta property="og:locale" content="en_US">
+    <meta property="article:published_time" content="{{REPORT_DATE_ISO}}">
+    <meta property="article:author" content="AICW AI Mentions">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{DOMAIN_NAME}} - Link Domain Analysis">
+    <meta name="twitter:description" content="Rank #{{DOMAIN_RANK}} with {{DOMAIN_INFLUENCE}} share of voice across {{BOT_COUNT}} AI models.">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{{CANONICAL_URL}}">
+
+    <!-- Favicon -->
+    <link rel="icon" href="https://www.aicw.io/favicon.svg" type="image/svg+xml">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+{{JSON_LD_DATA}}
+    </script>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Load Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4f46e5',
+                        secondary: '#3b82f6',
+                    },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        /* CSS Variables for Theme Colors */
+        :root {
+            --primary-color: #4f46e5;
+            --secondary-color: #3b82f6;
+            --background-color: #ffffff;
+            --text-color: #333333;
+            --surface-raised-color: #ffffff;
+            --surface-muted-color: #f8fafc;
+            --surface-border-color: #e2e8f0;
+            --table-header-bg: #f8fafc;
+            --table-header-text: #1f2937;
+            --table-body-text: #1f2937;
+            --table-stripe-bg: #f8fafc;
+            --table-hover-bg: #eef2ff;
+            --code-bg-color: #f1f5f9;
+        }
+
+        html.dark {
+            --background-color: #1a1a1a;
+            --text-color: #e2e8f0;
+            --surface-raised-color: #111827;
+            --surface-muted-color: #1f2937;
+            --surface-border-color: #334155;
+            --table-header-bg: #1f2937;
+            --table-header-text: #e2e8f0;
+            --table-body-text: #e5e7eb;
+            --table-stripe-bg: rgba(148, 163, 184, 0.08);
+            --table-hover-bg: rgba(148, 163, 184, 0.14);
+            --code-bg-color: #0f172a;
+        }
+
+        body {
+            color: var(--text-color);
+            background-color: var(--background-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        a {
+            color: var(--secondary-color) !important;
+            transition: color 0.3s ease;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Metric card styles */
+        .metric-card {
+            background-color: var(--surface-raised-color);
+            border: 1px solid var(--surface-border-color);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .metric-label {
+            font-size: 0.875rem;
+            color: var(--text-color);
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+
+        /* Smaller metric cards */
+        .metric-card-sm {
+            background-color: var(--surface-raised-color);
+            border: 1px solid var(--surface-border-color);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .metric-card-sm:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-value-sm {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .metric-label-sm {
+            font-size: 0.7rem;
+            color: var(--text-color);
+            opacity: 0.7;
+            margin-top: 0.125rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Table styles */
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            min-width: 720px;
+            background-color: var(--surface-raised-color);
+            color: var(--table-body-text);
+            border: 1px solid var(--surface-border-color);
+        }
+
+        table th {
+            background-color: var(--table-header-bg) !important;
+            color: var(--table-header-text) !important;
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--surface-border-color);
+            white-space: nowrap;
+        }
+
+        table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--surface-border-color);
+            color: var(--table-body-text);
+            white-space: nowrap;
+        }
+
+        table tbody tr:nth-child(even) {
+            background-color: var(--table-stripe-bg);
+        }
+
+        table tbody tr:hover {
+            background-color: var(--table-hover-bg);
+        }
+
+        /* Citation block styles */
+        .citation-block {
+            border-left: 4px solid var(--secondary-color);
+            padding: 1rem;
+            margin: 0.75rem 0;
+            background-color: var(--surface-muted-color);
+            border-radius: 0 0.5rem 0.5rem 0;
+        }
+
+        .citation-text {
+            color: var(--text-color);
+            line-height: 1.6;
+            font-family: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            background-color: var(--code-bg-color);
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+        }
+
+        .citation-meta {
+            font-size: 0.75rem;
+            color: var(--text-color);
+            opacity: 0.7;
+            margin-top: 0.5rem;
+        }
+
+        /* Link type badge styles */
+        .linktype-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        html.dark .linktype-badge {
+            background-color: #1e3a8a;
+            color: #93c5fd;
+        }
+
+        /* Domain highlight in citations */
+        .domain-highlight {
+            background-color: #fef3c7;
+            padding: 0.125rem 0.25rem;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        html.dark .domain-highlight {
+            background-color: #92400e;
+            color: #fef3c7;
+        }
+
+        /* Bot icon styles */
+        .icon_bot {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 10px;
+            color: white;
+        }
+
+        .icon_bot_google_gemini { background: linear-gradient(135deg, #4285f4, #34a853); }
+        .icon_bot_perplexity_ai { background: linear-gradient(135deg, #000000, #333333); }
+        .icon_bot_brave_search { background: linear-gradient(135deg, #fb542b, #ff7a59); }
+        .icon_bot_you_com { background: linear-gradient(135deg, #2c2c2c, #454545); }
+        .icon_bot_openai_searchgpt { background: linear-gradient(135deg, #74aa9c, #9ec1b9); }
+        .icon_bot_unknown { background: linear-gradient(135deg, #808080, #A9A9A9); }
+        /* Dark mode toggle button */
+        .dark-mode-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #1f2937;
+        }
+
+        html.dark .dark-mode-toggle {
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+        }
+
+        .dark-mode-toggle:hover {
+            transform: scale(1.05);
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        html.dark .dark-mode-toggle:hover {
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Questions Modal Styles */
+        .questions-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .questions-modal-overlay.active { display: flex; }
+        .questions-modal {
+            background: var(--surface-raised-color);
+            border-radius: 0.75rem;
+            max-width: 600px;
+            max-height: 80vh;
+            width: 90%;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        }
+        .questions-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--surface-border-color);
+        }
+        .questions-modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: calc(80vh - 60px);
+        }
+        .questions-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-color);
+            opacity: 0.6;
+            line-height: 1;
+        }
+        .questions-modal-close:hover { opacity: 1; }
+
+        /* Full Answer Modal */
+        .answer-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+        }
+        .answer-modal-overlay.active { display: flex; }
+        .answer-modal {
+            background: var(--surface-raised-color);
+            border-radius: 0.75rem;
+            max-width: 800px;
+            max-height: 90vh;
+            width: 95%;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);
+        }
+        .answer-modal-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--surface-border-color);
+            flex-shrink: 0;
+        }
+        .answer-modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .answer-modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-color);
+            opacity: 0.6;
+        }
+        .answer-modal-close:hover { opacity: 1; }
+        .answer-content {
+            font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            background: var(--code-bg-color);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+
+    <!-- Dark Mode Toggle -->
+    <button class="dark-mode-toggle no-print" onclick="toggleDarkMode()" title="Toggle dark mode">
+        <i class="fas fa-moon dark:hidden"></i>
+        <i class="fas fa-sun hidden dark:inline"></i>
+    </button>
+    <!-- Static HTML Page -->
+        <!-- Static Header -->
+        <header class="shadow-lg bg-white">
+            <div class="container mx-auto px-4 py-3">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="text-center md:text-left">
+                        <a href="https://www.aicw.io/aicw-ai-mentions?utm_source=public_reports&utm_medium=header&utm_campaign={{PROJECT_NAME_SLUG}}"
+                           class="flex flex-col hover:opacity-80 transition-opacity">
+                            <span class="text-2xl font-bold text-gray-900">AICW AI Mentions</span>
+                        </a>
+                        <p class="text-sm text-gray-600 mt-1">
+                            AI Mentions, Links & Domains Report for <strong>{{PROJECT_NAME}}</strong>
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <a href="https://www.aicw.io/aicw-ai-mentions?utm_source=public_reports&utm_medium=header&utm_campaign={{PROJECT_NAME_SLUG}}"
+                           class="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700">
+                            AICW.io
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Back Navigation -->
+        <nav class="container mx-auto px-4 py-2 bg-gray-50">
+            <a href="../index.html" class="inline-flex items-center text-indigo-600 hover:text-indigo-800">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Report
+            </a>
+        </nav>
+
+        <!-- Static Hero Section -->
+        <div class="container mx-auto px-4 py-6">
+{{STATIC_HERO_HTML}}
+        </div>
+
+        <!-- About This Source (SEO Introduction) -->
+        <div class="container mx-auto px-4 py-4">
+{{STATIC_INTRO_HTML}}
+        </div>
+
+        <!-- Static Metrics Cards -->
+        <div class="container mx-auto px-4 py-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+{{STATIC_METRICS_CARDS_HTML}}
+            </div>
+
+            <!-- Static Model Table -->
+            <div class="mt-6 bg-white rounded-lg shadow p-4">
+                <h3 class="font-semibold text-lg mb-4 text-gray-900">
+                    <i class="fas fa-robot mr-2"></i>Used by AI Models
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th class="text-center">Voice</th>
+                                <th class="text-center">Position</th>
+                                <th class="text-center">Citations</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+{{STATIC_MODEL_TABLE_ROWS_HTML}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Static Pages from Domain -->
+        <div class="container mx-auto px-4 py-4">
+{{STATIC_PAGES_FROM_DOMAIN_HTML}}
+        </div>
+
+        <!-- Static Referencing Brands -->
+        <div class="container mx-auto px-4 py-4">
+{{STATIC_REFERENCING_BRANDS_HTML}}
+        </div>
+
+        <!-- Static Excerpts -->
+        <div class="container mx-auto px-4 py-4">
+{{STATIC_EXCERPTS_HTML}}
+        </div>
+
+        <!-- Static Footer -->
+        <footer class="py-10 mt-8 bg-gray-50 border-t border-gray-200">
+            <div class="container mx-auto px-4">
+                <!-- Brand + CTA Row -->
+                <div class="flex flex-col md:flex-row gap-8 items-start md:items-center justify-between mb-8">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">AICW AI Mentions</h3>
+                        <p class="text-sm text-gray-600">Open-source AI mention reports</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <a href="https://www.aicw.io/aicw-ai-mentions?utm_source=public_reports&utm_medium=footer&utm_campaign={{PROJECT_NAME_SLUG}}"
+                           class="inline-flex items-center gap-2 text-lg font-semibold text-indigo-600 hover:text-indigo-700">
+                            AICW.io
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Copyright + Meta -->
+                <div class="pt-6 border-t border-gray-200">
+                    <p class="text-sm text-gray-600">
+                        &copy; 2024
+                        <a href="https://www.aicw.io/aicw-ai-mentions?utm_source=public_reports&utm_campaign={{PROJECT_NAME_SLUG}}" class="hover:text-indigo-600">AICW.io</a>.
+                        Generated by <a href="https://www.aicw.io/aicw-ai-mentions?utm_source=public_reports&utm_campaign={{PROJECT_NAME_SLUG}}" class="hover:text-indigo-600">AICW AI Mentions</a>.
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Report Date: {{REPORT_DATE_ISO}} | Engine v{{REPORT_ENGINE_VERSION}}
+                    </p>
+                </div>
+
+                <!-- Disclaimer -->
+                <p class="text-xs text-gray-500 mt-6 leading-relaxed max-w-4xl">
+                    DISCLAIMER: Intellectual Property Notice: All organizations and company names, trademarks, registered trademarks, service marks, logos, brand names, trade dress, and other intellectual property displayed in this report remain the sole property of their respective owners. Use of these marks does not imply any affiliation with, sponsorship by, or endorsement from the trademark holders. Any references to third-party trademarks are made solely for identification and informational purposes.
+                    No Endorsement: The inclusion of any third-party content, data, links, references, or mentions in this report does not constitute, and should not be construed as, an endorsement, recommendation, or approval by AICW.io of any product, service, company, organization, or viewpoint. Similarly, the absence of any entity from this report should not be interpreted as a negative assessment.
+                    Accuracy and Reliability: AICW.io makes no representations, warranties, or guarantees—express or implied—regarding the accuracy, completeness, reliability, timeliness, or suitability of any information contained in this report. The data presented herein is derived from automated analysis of artificial intelligence systems and publicly available sources, which may contain errors, omissions, or inaccuracies. AI-generated content and responses are subject to change without notice and may vary based on numerous factors beyond our control.
+                    Limitation of Liability: To the fullest extent permitted by applicable law, AICW.io, its affiliates, officers, directors, employees, agents, and licensors shall not be liable for any direct, indirect, incidental, special, consequential, punitive, or exemplary damages arising from or related to the use of, reliance upon, or inability to use any information contained in this report, even if advised of the possibility of such damages.
+                    No Professional Advice: The information provided in this report is for general informational and research purposes only and does not constitute legal, financial, business, marketing, or other professional advice. Users should consult qualified professionals before making any decisions based on the information contained herein.
+                    Third-Party Data Sources: This report may contain information obtained from or generated by third-party artificial intelligence platforms and other external sources. AICW.io does not control, verify, or guarantee the content produced by such third parties and assumes no responsibility for their accuracy, policies, or practices.
+                    Fair Use and Research Purpose: This report is provided for informational, research, and analytical purposes. Any data or analysis presented is intended to provide market insights and should not be used as the sole basis for business, investment, or strategic decisions.
+                    Modifications: Information in this report reflects data available at the time of generation. The report generator may change over time; regenerate reports after updating the software if you want the latest report format.
+                   
+                    By accessing or using this report, you acknowledge that you have read, understood, and agree to be bound by this disclaimer.
+                </p>
+            </div>
+        </footer>
+
+    <!-- Embedded  Data -->
+    <script>
+        window.DomainData = {{DOMAIN_JSON}};
+        window.BotsData = {{BOTS_JSON}};
+        window.ReportMeta = {{REPORT_META_JSON}};
+    </script>
+
+    <!-- Load answers data for full answer expansion -->
+    <script>
+        (function() {
+            var script = document.createElement('script');
+            script.src = '{{REPORT_DATE_ISO}}-answers.js';
+            script.onload = function() {
+                var answers = window['answers{{REPORT_DATE_WITHOUT_DASHES}}'];
+                window.fullAnswers = answers;
+            };
+            script.onerror = function() {
+                console.log('Answers file not available - full answer expansion disabled');
+            };
+            document.head.appendChild(script);
+        })();
+    </script>
+    <!-- Dark mode init + Year -->
+    <script>
+        if (localStorage.getItem('aicwDarkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+        // Toggle dark mode
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('aicwDarkMode', isDark.toString());
+        }
+        // Set current year in footer
+        var yearEl = document.getElementById('currentYear');
+        if (yearEl) yearEl.textContent = new Date().getFullYear();
+    </script>
+
+    <!-- Questions Modal -->
+{{STATIC_QUESTIONS_MODAL_HTML}}
+
+    <!-- Full Answer Modal -->
+    <div id="answer-modal" class="answer-modal-overlay" onclick="if(event.target===this)closeAnswerModal()">
+        <div class="answer-modal" style="position:relative;">
+            <button class="answer-modal-close" onclick="closeAnswerModal()">&times;</button>
+            <div class="answer-modal-header">
+                <div id="answer-modal-question" class="text-lg font-semibold mb-2 text-gray-900 dark:text-white"></div>
+                <div class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                    <span id="answer-modal-model" class="flex items-center gap-2"></span>
+                    <span>•</span>
+                    <span id="answer-modal-date"></span>
+                </div>
+            </div>
+            <div class="answer-modal-body">
+                <div id="answer-modal-content" class="answer-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Control Scripts -->
+    <script>
+        function openQuestionsModal() {
+            var modal = document.getElementById('questions-modal');
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+        function closeQuestionsModal() {
+            var modal = document.getElementById('questions-modal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+        function filterTable(tableId) {
+            var table = document.getElementById(tableId);
+            if (!table) return;
+            var needle = (table.dataset.searchQuery || '').toLowerCase().trim();
+            var activeTag = (table.dataset.activeTag || '').toLowerCase().trim();
+            Array.from(table.querySelectorAll('tbody tr')).forEach(function(row) {
+                var haystack = (row.innerText || row.textContent || '').toLowerCase();
+                var textMatch = !needle || haystack.includes(needle);
+                var tagMatch = !activeTag || Array.from(row.querySelectorAll('.type-badge')).some(function(tag) {
+                    return (tag.innerText || tag.textContent || '').toLowerCase().trim() === activeTag;
+                });
+                row.style.display = textMatch && tagMatch ? '' : 'none';
+            });
+        }
+        function setTableSearchQuery(tableId, query) {
+            var table = document.getElementById(tableId);
+            if (!table) return;
+            table.dataset.searchQuery = query || '';
+            filterTable(tableId);
+        }
+        function setTableTagFilter(tableId, tag, button) {
+            var table = document.getElementById(tableId);
+            if (!table) return;
+            var nextTag = table.dataset.activeTag === tag ? '' : tag;
+            table.dataset.activeTag = nextTag;
+            var controls = button.closest('.table-search-control');
+            if (controls) {
+                Array.from(controls.querySelectorAll('[data-table-tag]')).forEach(function(chip) {
+                    var isActive = chip.dataset.tableTag === nextTag;
+                    chip.classList.toggle('bg-indigo-600', isActive);
+                    chip.classList.toggle('text-white', isActive);
+                    chip.classList.toggle('border-indigo-600', isActive);
+                    chip.classList.toggle('bg-white', !isActive);
+                    chip.classList.toggle('dark:bg-gray-800', !isActive);
+                    chip.classList.toggle('text-gray-700', !isActive);
+                    chip.classList.toggle('dark:text-gray-200', !isActive);
+                    chip.classList.toggle('border-gray-200', !isActive);
+                    chip.classList.toggle('dark:border-gray-700', !isActive);
+                });
+            }
+            filterTable(tableId);
+        }
+        function getTableTypeTags(table) {
+            var tags = new Set();
+            Array.from(table.querySelectorAll('tbody .type-badge')).forEach(function(tag) {
+                var text = (tag.innerText || tag.textContent || '').trim();
+                if (text) tags.add(text);
+            });
+            return Array.from(tags).sort(function(a, b) { return a.localeCompare(b); });
+        }
+        function escapeHtmlValue(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+        function installTableSearchControls() {
+            Array.from(document.querySelectorAll('table')).forEach(function(table, index) {
+                if (table.dataset.searchInstalled === 'true') return;
+                if (!table.id) table.id = 'searchable-table-' + index;
+                table.dataset.searchInstalled = 'true';
+                var typeTags = getTableTypeTags(table);
+                var tagButtons = typeTags.length
+                    ? '<div class="flex flex-wrap items-center gap-2">' + typeTags.map(function(tag) {
+                        return '<button type="button" data-table-tag="' + escapeHtmlValue(tag) + '" class="px-2.5 py-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-medium text-gray-700 dark:text-gray-200 hover:border-indigo-500">' + escapeHtmlValue(tag) + '</button>';
+                    }).join('') + '</div>'
+                    : '';
+                var control = document.createElement('div');
+                control.className = 'table-search-control flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3';
+                control.innerHTML = [
+                    tagButtons || '<div></div>',
+                    '<label class="relative w-full sm:w-72">',
+                    '<span class="sr-only">Search table</span>',
+                    '<i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>',
+                    '<input type="search" data-table-search-input placeholder="Search table..."',
+                    ' class="w-full pl-9 pr-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">',
+                    '</label>'
+                ].join('');
+                var input = control.querySelector('[data-table-search-input]');
+                if (input) {
+                    input.addEventListener('input', function() {
+                        setTableSearchQuery(table.id, input.value);
+                    });
+                }
+                Array.from(control.querySelectorAll('[data-table-tag]')).forEach(function(button) {
+                    button.addEventListener('click', function() {
+                        setTableTagFilter(table.id, button.dataset.tableTag, button);
+                    });
+                });
+                var wrapper = table.closest('.overflow-x-auto') || table;
+                wrapper.parentNode.insertBefore(control, wrapper);
+            });
+        }
+        installTableSearchControls();
+        // Full Answer Modal functions
+        function openAnswerModal(question, modelName, iconUrl, iconClass, botInitial, date, answerText) {
+            document.getElementById('answer-modal-question').textContent = question;
+            // Construct icon HTML at runtime to avoid escaping issues
+            var iconHtml = '';
+            if (iconUrl) {
+                iconHtml = '<img src="' + iconUrl + '" alt="' + modelName + '" class="w-5 h-5 rounded" onerror="this.style.display=\'none\'">';
+            } else {
+                iconHtml = '<span class="icon_bot ' + iconClass + '">' + botInitial + '</span>';
+            }
+            document.getElementById('answer-modal-model').innerHTML = iconHtml + ' ' + modelName;
+            document.getElementById('answer-modal-date').textContent = date;
+            document.getElementById('answer-modal-content').textContent = answerText;
+            document.getElementById('answer-modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeAnswerModal() {
+            document.getElementById('answer-modal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        // Helper to get full answer text
+        window.getFullAnswerText = function(promptId, modelId) {
+            var date = window.ReportMeta && window.ReportMeta.reportDate;
+            var answers = window.fullAnswers || (date && window['answers' + date.replace(/-/g, '')]);
+            if (!answers || !promptId || !date) return 'Answer not available';
+            var byPrompt = answers[promptId];
+            if (!byPrompt) return 'Answer not available';
+            var byDate = byPrompt[date];
+            if (!byDate) return 'Answer not available';
+            var byModel = byDate[modelId];
+            return byModel && byModel.text ? byModel.text : 'Answer not available';
+        };
+        // Close modals on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeQuestionsModal();
+                closeAnswerModal();
+            }
+        });
+    </script>
+{{FOOTER_CUSTOM_CODE}}
+</body>
+
+</html>

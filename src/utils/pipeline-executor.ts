@@ -19,6 +19,8 @@ export interface ExecutionOptions {
   /** Custom logger instance */
   /** Additional environment variables */
   env?: Record<string, string>;
+  /** Extra command-line args to pass to specific action IDs */
+  actionArgs?: Record<string, string[]>;
   /** Project */
   project?: string;
 }
@@ -65,7 +67,7 @@ export class PipelineExecutor {
     pipeline: PipelineDefinition,
     options: ExecutionOptions = {}
   ): Promise<ExecutionResult> {
-    const { showHints = true, env = {}, project } = options;
+    const { showHints = true, env = {}, actionArgs = {}, project } = options;
     if(project) {
       this.project = project;
     }
@@ -111,7 +113,7 @@ export class PipelineExecutor {
         } else {
           // Normal child process execution
           const scriptPath = getScriptPath(action.cmd);
-          const args = [scriptPath, this.project];
+          const args = [scriptPath, this.project, ...(actionArgs[action.id] || [])];
           success = await this.runInterruptible(args, showHints, {
             currentStep: i + 1,
             totalSteps: pipeline.actions.length,
@@ -152,7 +154,7 @@ export class PipelineExecutor {
         if (error.message.startsWith('MissingConfigError:')) {
           logger.error(`\n❌ Pipeline "${pipeline.name}" stopped: Missing configuration`);
           logger.error('\n💡 Please run setup to configure API keys:');
-          logger.error('   aicw setup\n');
+          logger.error('   aicw-ai-mentions setup-api-key\n');
           await logger.showSummary();
           await waitForEnterInInteractiveMode();
 
@@ -191,6 +193,10 @@ export class PipelineExecutor {
     const duration = Date.now() - startTime;
 
     await logger.showSummary();
+
+    // Send iTerm2 notification on successful completion
+    const durationSec = (duration / 1000).toFixed(1);
+    process.stdout.write(`\x1b]9;${pipeline.name} complete (${durationSec}s)\x07`);
 
     return {
       project: this.project,

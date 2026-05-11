@@ -16,126 +16,138 @@ START OF THE JS OUTPUT TEMPLATE:
 
 output = {
 
-/* INSTRUCTION: You will need to extract list of keywords, organizations, concepts, persons, products, locations and sources from the bot answers below. Keep track of any issues with data quality or completeness. For each section (summary, organizations, concepts, persons, products, locations, sources), follow these guidelines:
+/* INSTRUCTION: Extract brands from bot answers using COMPRESSED FORMAT.
 
-1. When extractting data use ONLY the information provided in the bot answers from the `ANSWERS` section. Do not include any information from other parts of the prompt in this list. 
+Use short field names to minimize output:
+- "v" = value (the entity name)
+- "t" = type codes (comma-separated if multiple: 1=product, 2=organization, 3=person, 4=event)
 
-2. Only extract information that is explicitly mentioned in the bot answers. Do not infer or assume any information.
+GUIDELINES:
+1. Use ONLY information from the `ANSWERS` section below
+2. Only extract entities EXPLICITLY mentioned - do not infer
+3. Use the most complete version of each name as mentioned in answers
+4. Accuracy is crucial - if in doubt, omit
 
-3. Again, accuray is crucial. Only attribute keywords, persons, organizations, products, concepts, locations or information to bots that explicitly mention them in their responses. Do not infer or assume any information. If in doubt, it's better to omit than to incorrectly attribute.
-
-4. For entities (persons, organizations, products, etc.) that are mentioned multiple times with slight variations in name, use the most common or complete version of the name but it must be explictely mentioned in original answers.
-
-5. After creating all entries, perform a final cross-check of each entry against all bot responses to ensure accuracy and completeness.
-
-Additional instructions for each section will follow. Do NOT include this instruction in the output!
-*/
-
-"products": [
-/* INSTRUCTION: Analyze each answer from the `ANSWERS` section individually. 
-
-1. For each answer, identify any and all products that are explicitly mentioned and list them in the output array as the following: 
-
-   [
-    "Product1Name", // as mentioned in answers
-    "Product2Name", // ase mentioned in answers
-   ... // more products mentioned in answers
-   ]
-
-
-IMPORTANT: 
-- Do not infer, extrapolate, or assume any products. Only include those that are explicitly mentioned in at least one bot's answer.
-- For products mentioned multiple times with slight variations in name, use the most common or complete version of the name but it must be explictely mentioned in original answers.
-- Do NOT use any example products from the instructions. Only extract products actually mentioned in the bot answers.
-
-After creating all entries, perform a final cross-check of each entry against all bot responses to ensure accuracy and completeness.
 Do NOT include this instruction in the output!
 */
-],
 
-"organizations": [
-/* INSTRUCTION: Analyze each answer from the `ANSWERS` section individually. 
+"brands": [
+/* INSTRUCTION: Extract ALL significant named entities using compressed format.
 
-1. For each answer, identify all company/organization or legal entities names that are explicitly mentioned.
+## TYPE CODES:
+- 1 = product (products, services, platforms, methodologies, standards, publications)
+- 2 = organization (companies, institutions, agencies, associations, non-profits)
+- 3 = person (executives, experts, authors, researchers, public figures)
+- 4 = event (conferences, crises, awards, landmark cases, named occurrences)
 
-2. Format each verified entry as follows:
-   [
-    "Company1Name", // as mentioned in answers
-   "Company2Name" // as mentioned in answers 
-    .. // more companies mentioned
-   ],
+## FORMAT: {"v":"EntityName","t":"TYPE_CODES"}
 
-IMPORTANT:
-- Only include organizations explicitly mentioned in the bot answers
-- Do NOT use any example organizations from the instructions
-- Do NOT include this instruction in the output!
-*/
-],
+Use comma-separated type codes when entity has MULTIPLE types (primary type first):
+- {"v":"Freshdesk","t":"2,1"}  → organization (primary) AND product
+- {"v":"Zendesk","t":"2,1"}    → organization (primary) AND product
+- {"v":"Slack","t":"2,1"}      → organization (primary) AND product
+- {"v":"Google","t":"2"}       → organization only (products extracted separately)
 
-"persons": [
-/* INSTRUCTION: Extract and normalize persons data from bot responses following the rules explained previously.
+## WHEN TO USE MULTIPLE TYPES:
+- Company that IS its main product (same name): "Freshdesk", "Zendesk", "Slack", "Notion" → "2,1"
+- Company with distinct product names: "Google" → "2", "Google Analytics" → "1" (separate entities)
+- Person who is also a brand: Use "3" only (person type takes precedence)
 
-Format each verified entry as follows:
-       [
-         "Person1 Full Name",    // As mentioned in text
-         "Person 2 Full Name",   // As mentioned in text
-         .. // more persons
-       ]
+## WHAT TYPE 1 (product) INCLUDES:
+- Software/digital products (Salesforce, Notion, Bloomberg Terminal, Westlaw)
+- Websites/platforms (Wikipedia, YouTube, LinkedIn, WebMD, Coursera)
+- Physical products (iPhone, Tesla Model 3, Advil, Coca-Cola)
+- Services (Netflix, Uber, Airbnb, McKinsey consulting)
+- Publications/media (The New York Times, Nature, Harvard Business Review)
+- Methodologies/frameworks (Agile, Six Sigma, Design Thinking, SWOT Analysis, Lean)
+- Standards/certifications (ISO 9001, GDPR, HIPAA, PMP, CFA, SOC 2)
+- Financial instruments (S&P 500, Bitcoin, Dow Jones)
+- Medical/health products (Pfizer vaccine, Lipitor, CRISPR)
 
-    FORBIDDEN:
-    × No inference of unnamed persons
-    × No inclusion of generic teams/groups
-    × No fabrication of names!
-    × Do NOT use any example persons from the instructions
-    * Do NOT include this instruction in the output!
-    */
-],   
+## WHAT TYPE 2 (organization) INCLUDES:
+- Corporations (Google, Apple, Walmart, Toyota, Goldman Sachs, McKinsey)
+- Healthcare orgs (Mayo Clinic, WHO, CDC, Johns Hopkins, Cleveland Clinic)
+- Government/regulatory (FDA, EPA, SEC, Federal Reserve, EU Commission, UN)
+- Educational (Harvard, MIT, Stanford, Oxford, UNESCO)
+- Media (CNN, BBC, Reuters, Bloomberg, The Economist as org)
+- Non-profits/NGOs (Red Cross, UNICEF, Greenpeace, Gates Foundation)
+- Professional associations (AMA, ABA, IEEE, CFA Institute, PMI)
+- Research institutions (RAND Corporation, Brookings, McKinsey Global Institute)
 
-"places": [
-/* INSTRUCTION: Extract and normalize names of places from bot responses following the rules explained previously.
+## WHAT TYPE 3 (person) INCLUDES:
+- Business leaders (Warren Buffett, Elon Musk, Mary Barra)
+- Healthcare/science experts (Anthony Fauci, any named researcher)
+- Finance/economics (Janet Yellen, Ray Dalio)
+- Authors/thought leaders (Malcolm Gladwell, Simon Sinek, Peter Drucker)
+- Historical figures when relevant (Adam Smith, W. Edwards Deming)
+- Use full names when available
 
-OUTPUT FORMAT
-       [
-         "Place1Name",    // As mentioned in answers
-         "Place2Name", // as mentioned in answers
-         .. // more places names as mentioned in answers
-       ]
+## WHAT TYPE 4 (event) INCLUDES:
+- Business events (Davos, TED, SXSW, industry trade shows)
+- Financial events (2008 Financial Crisis, IPOs by name)
+- Healthcare events (COVID-19 pandemic, clinical trials by name)
+- Legal/political (Roe v. Wade, Dodd-Frank Act, landmark cases)
+- Awards (Nobel Prize, Pulitzer Prize, industry awards)
 
-IMPORTANT:
-- Only include places explicitly mentioned in the bot answers
-- Do NOT use any example places from the instructions
+## EXAMPLE OUTPUT (DO NOT use these in your output):
+[
+  {"v":"Zendesk","t":"2,1"},
+  {"v":"Freshdesk","t":"2,1"},
+  {"v":"Slack","t":"2,1"},
+  {"v":"McKinsey","t":"2"},
+  {"v":"Six Sigma","t":"1"},
+  {"v":"Harvard Business Review","t":"1"},
+  {"v":"Warren Buffett","t":"3"},
+  {"v":"WHO","t":"2"},
+  {"v":"ISO 9001","t":"1"},
+  {"v":"Davos","t":"4"},
+  {"v":"S&P 500","t":"1"}
+]
 
-    */
-],   
+## CRITICAL: Multi-Type vs Separate Entities
 
-"events": [
-/* INSTRUCTION: Extract and normalize names of events  from bot responses following the rules explained previously.
+**USE MULTI-TYPE ("2,1")** when company name IS the product name:
+- "Zendesk offers customer service..." → {"v":"Zendesk","t":"2,1"}
+- "Freshdesk provides support tools..." → {"v":"Freshdesk","t":"2,1"}
+- "Slack enables team communication..." → {"v":"Slack","t":"2,1"}
 
-OUTPUT FORMAT
-       [
-         "Event1 Name",    // As mentioned in answers
-         "event2 Name",   // As mentioned in answers
-         .. // more event names as mentio in answers
-       ]
+**USE SEPARATE ENTITIES** when product has a DIFFERENT name from company:
+- "Zendesk QA offers AI-powered analysis..." →
+  {"v":"Zendesk","t":"2,1"},     // Company (also a product)
+  {"v":"Zendesk QA","t":"1"}     // Distinct product name
 
-IMPORTANT:
-- Do Only include events explicitly mentioned in the bot answers
-- Do NOT use any example events from the instructions
+- "Microsoft's Azure provides cloud..." →
+  {"v":"Microsoft","t":"2"},     // Company only
+  {"v":"Azure","t":"1"}          // Product only
 
-    */
-],   
+- "Google Analytics 4 provides tracking..." →
+  {"v":"Google","t":"2"},        // Company only
+  {"v":"Google Analytics 4","t":"1"} // Product only
 
-"keywords": [
-/*
-INSTRUCTION: Review answers from `ANSWERS` section and extract up to 50 keywords, actions, concepts, ideas and phrases from bot responses following the rules explained previously.
+- "OpenAI's ChatGPT offers AI chat..." →
+  {"v":"OpenAI","t":"2"},        // Company only
+  {"v":"ChatGPT","t":"1"}        // Product only
 
-OUTPUT FORMAT:
+DO NOT only extract products - ALWAYS extract the parent organization too!
 
-`[ "Exact keyword/concept/idea/action/phrase", "another exact mentioned keyword/concept/idea/action/phrase", ...]
+## EXTRACT:
+- Named entities that can be searched or have identifiable presence
+- Abbreviations for specific things (WHO, FDA, ISO, S&P, MIT, NATO)
+- Publications/websites cited as sources
+- Named methodologies/frameworks (Six Sigma, Agile, Design Thinking)
+- Named standards/certifications (GDPR, HIPAA, ISO 9001)
+- Both organization AND its products if both mentioned
 
-IMPORTANT:
-- Only extract keywords/concepts actually mentioned in the bot answers
-- Do NOT use any example keywords from the instructions
+## DO NOT EXTRACT:
+- Generic concepts (strategy, innovation, best practices, leadership)
+- Common nouns (company, framework, methodology, tool, platform, service)
+- Vague references ("the company", "this study", "experts say", "leading firm")
+- Generic industry terms (healthcare, finance, consulting, technology)
+- Generic plural phrases ("Various tools", "Several platforms", "Multiple solutions")
+- Names with domain extensions (use "AIclicks" not "AIclicks.io", use "Notion" not "notion.com")
+- Incomplete or partial names (use complete brand names as written in answers)
+
+Do NOT include this instruction in the output!
 */
 ]
 

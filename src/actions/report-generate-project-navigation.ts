@@ -8,7 +8,6 @@ import { AGGREGATED_DIR_NAME } from '../config/constants.js';
 import { writeFileAtomic, drawBox, colorize, waitForEnterInInteractiveMode, replaceMacrosInTemplate } from '../utils/misc-utils.js';
 import { logger } from '../utils/compact-logger.js';
 import { generateProjectNavigation } from '../utils/report-projects-navigation-generator.js';
-import { ReportFileManager } from '../utils/report-file-manager.js';
 import { getProjectNameFromCommandLine, getTargetDateFromProjectOrEnvironment, validateAndLoadProject } from '../utils/project-utils.js';
 import { getUserProjectQuestionFileContent, getCurrentDateTimeAsStringISO } from '../config/user-paths.js';
 
@@ -25,7 +24,7 @@ async function main(projectArg?: string): Promise<void> {
   logger.info(`Generating navigation for project reports: ${project}, date: ${targetDate}`);
 
   const baseQ: string = QUESTIONS_DIR(project);
-  const outputBase: string = OUTPUT_DIR(project, targetDate);
+  const outputBase: string = OUTPUT_DIR(project);
 
   // Update project navigation
   try {

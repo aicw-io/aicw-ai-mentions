@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import path, { join, dirname } from 'path';
 import { randomBytes } from 'crypto';
-import { getPackageRoot, isDevMode } from '../config/user-paths.js';
+import { getPackageRoot, isDevMode, getUserDataDir } from '../config/user-paths.js';
 import { decryptCredentialsFile, isEncryptedCredentials } from './crypto-utils.js';
 import { output } from './output-manager.js';
 import { USER_CONFIG_CREDENTIALS_FILE } from  '../config/user-paths.js';
@@ -14,6 +14,7 @@ import { homedir } from 'os';
 
 
 const MAX_TEMPLATE_PREVIEW_LENGTH_FOR_ERROR_MESSAGES = 400;
+const warnedCredentialsFiles = new Set<string>();
 
 export const COLORS = {
   reset: '\x1b[0m',
@@ -220,6 +221,15 @@ export async function loadEnvFile(): Promise<void> {
     if (isEncryptedCredentials(credData)) {
       // Decrypt and load API keys
       const decrypted = decryptCredentialsFile(credData);
+      const encryptedKeyCount = Object.keys(credData.credentials).length;
+      const decryptedKeyCount = Object.keys(decrypted).length;
+      if (encryptedKeyCount > decryptedKeyCount && !warnedCredentialsFiles.has(credentialsPath)) {
+        warnedCredentialsFiles.add(credentialsPath);
+        logger.warnImmediate(
+          `Credentials file exists but could not be decrypted: ${credentialsPath}. ` +
+          'Run "aicw-ai-mentions setup-api-key" to replace it on this machine.'
+        );
+      }
       for (const [key, value] of Object.entries(decrypted)) {
         if (!process.env[key]) {
           process.env[key] = value;
@@ -258,9 +268,10 @@ export async function replaceMacrosInTemplate(
     }
 
 
-    if(!value || typeof value !== 'string' || value.trim() === '') {
+    // Allow empty strings as valid values (e.g., for optional content sections)
+    if(typeof value !== 'string') {
       throw new PipelineCriticalError(
-        `Value for macro '${macro}' is empty or not a string: "${JSON.stringify(value)}" (type: ${typeof value})`,
+        `Value for macro '${macro}' is not a string: "${JSON.stringify(value)}" (type: ${typeof value})`,
         'replaceMacrosInTemplate',
         'verifyTemplateHasNoMacrosInside'
       );
@@ -425,7 +436,7 @@ export function isBackupFileOrFolder(entryName: string, isDirectory: boolean): b
  * 1. Rejects system directories (/System, /Windows, /usr, /etc, etc.)
  * 2. Rejects root directory and home directory root
  * 3. Resolves symlinks to prevent escape attacks
- * 4. REQUIRES path to be inside USER_DATA_DIR (~/Library/Application Support/aicw/{username}/data/)
+ * 4. REQUIRES path to be inside USER_DATA_DIR
  * 5. Checks for suspicious patterns (.git, node_modules, ..)
  *
  * @param targetPath - Path to validate (can be relative or absolute)
@@ -433,13 +444,13 @@ export function isBackupFileOrFolder(entryName: string, isDirectory: boolean): b
  * @throws PipelineCriticalError if path is dangerous or outside USER_DATA_DIR boundary
  *
  * @example
- * await validatePathIsSafe('/Users/x/Library/Application Support/aicw/user/data/projects/foo', 'project dir');
+ * await validatePathIsSafe(path.join(USER_DATA_DIR, 'projects', 'foo'), 'project dir');
  * // PASS - inside USER_DATA_DIR
  *
  * await validatePathIsSafe('/etc/passwd', 'project dir');
  * // THROW - system directory
  *
- * await validatePathIsSafe('/Users/x/Documents/foo', 'project dir');
+ * await validatePathIsSafe(path.resolve(USER_DATA_DIR, '..', '..', 'outside'), 'project dir');
  * // THROW - outside USER_DATA_DIR boundary
  */
 export async function validatePathIsSafe(
@@ -722,7 +733,8 @@ export async function waitForEnterInInteractiveMode(
 ): Promise<boolean> {
   // Only show prompt if running from interactive mode AND not part of a pipeline
   // When running as part of a pipeline, we want to continue to the next step automatically
-  if (process.env.AICW_INTERACTIVE_MODE === 'true' && !process.env.AICW_PIPELINE_STEP || forceShow) {
+  const shouldPrompt = (process.env.AICW_INTERACTIVE_MODE === 'true' && !process.env.AICW_PIPELINE_STEP) || forceShow;
+  if (shouldPrompt && process.stdin.isTTY && process.stdout.isTTY) {
     output.writeLine(colorize(`\n${messageType}`, 'dim'));
     const rl = createCleanReadline();
 
@@ -791,4 +803,38 @@ export async function isValidOutputFile(
   } catch (error) {
     return false; // File doesn't exist
   }
+}
+
+/**
+ * Load optional custom footer code from user templates folder.
+ * Used to inject custom HTML/JS (like analytics trackers) into report pages.
+ *
+ * @param templateName - Name of template (e.g., 'mention-page', 'source-page', 'index-project')
+ * @returns Custom HTML content or empty string if not found/empty
+ */
+export async function loadCustomFooterCode(templateName: string): Promise<string> {
+  const userDataDir = getUserDataDir();
+  const customTemplatePath = path.join(userDataDir, 'templates', 'footer_custom_code', `${templateName}.html`);
+
+  try {
+    const stats = await fs.stat(customTemplatePath);
+    if (stats.isFile()) {
+      const content = await fs.readFile(customTemplatePath, 'utf-8');
+      // Only inject if there's actual content (not just comments/whitespace)
+      const trimmedContent = content.trim();
+      // Check if it's only an HTML comment (our default template)
+      const isOnlyComment = /^<!--[\s\S]*-->$/.test(trimmedContent);
+      if (trimmedContent && !isOnlyComment) {
+        logger.warn(`Custom footer code injected from: ${customTemplatePath}`);
+        return content;
+      }
+    }
+  } catch (error) {
+    const fileError = error as NodeJS.ErrnoException;
+    if (fileError.code !== 'ENOENT') {
+      logger.warn(`Unable to read footer template ${customTemplatePath}: ${fileError.message}`);
+    }
+  }
+
+  return '';
 }

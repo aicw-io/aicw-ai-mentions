@@ -12,10 +12,10 @@ import { AICW_GITHUB_URL } from '../config/constants.js';
 const DEFAULT_REQUEST_TIMEOUT_FOR_AI = 30000;
 
 // Cache TTL configuration (seconds)
-// Default: 2592000 seconds = 30 days
+// Default: 94608000 seconds = 3 years (1095 days)
 // Set AICW_AI_CACHE_TTL_SECONDS=0 to disable caching
 const AI_RESPONSE_CACHE_TTL_SECONDS = parseInt(
-  process.env.AICW_AI_CACHE_TTL_SECONDS || '2592000'
+  process.env.AICW_AI_CACHE_TTL_SECONDS || '94608000'
 );
 
 const DEFAULT_AI_RESPONSE_CACHE_NAME = 'ai-responses';
@@ -140,7 +140,7 @@ export function createAiClientInstance(cfg: ModelConfig, overrideApiUrl: string 
     timeout: DEFAULT_REQUEST_TIMEOUT_FOR_AI, 
     defaultHeaders: {
       'HTTP-Referer': AICW_GITHUB_URL,
-      'X-Title': 'AI Chat Watch'
+      'X-Title': 'aicw-ai-mentions'
     }
   });
 

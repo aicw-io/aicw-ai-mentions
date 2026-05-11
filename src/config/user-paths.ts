@@ -17,12 +17,6 @@ const __dirname = dirname(__filename);
 export const MIN_VALID_ANSWER_SIZE = 200; // Minimum size in bytes for a valid answer
 export const MIN_VALID_OUTPUT_DATA_SIZE = 200; // Minimum size in bytes for PROMPT.md, COMPILED.js, data.js files
 
-// default other link type short name
-export const DEFAULT_OTHER_LINK_TYPE_SHORT_NAME = 'oth';
-export const DEFAULT_OTHER_LINK_TYPE_LONG_NAME = 'Other';
-
-const DEFAULT_AICW_USER_NAME = 'default-user';
-
 // User data directory (delegate to user-paths for consistency)
 // User data subdirectories
 export const USER_DATA_DIR = getUserDataDir();
@@ -46,7 +40,6 @@ export const USER_MODELS_JSON_FILE: string = path.join(getPackageConfigDataDir()
 export const USER_AI_PRESETS_DIR: string = path.join(getPackageConfigDataDir(), 'models', 'ai_presets');
 export const USER_QUESTION_TEMPLATES_DIR: string = path.join(getPackageConfigDataDir(), 'templates', 'questions');
 export const USER_SYSTEM_PROMPT_FILE_PATH: string = path.join(getPackageConfigDataDir(), 'prompts', 'answers', 'system-prompt.md');
-export const USER_LINK_TYPES_JSON_FILE: string = path.join(getPackageConfigDataGeneratedDir(), 'link-types.json');
 export const USER_PIPELINES_JSON_FILE: string = path.join(getPackageConfigDataDir(), 'pipelines.json');
 //============
 
@@ -57,43 +50,57 @@ const QUESTIONS_FILE_NAME = 'questions.md';
 
 // Get the base user data directory based on platform
 export function getUserDataDir(): string {
+  // If AICW_DATA_FOLDER is set, use it directly as the complete path
+  // Supports relative paths (resolved from cwd) and absolute paths
+  // Example: AICW_DATA_FOLDER=../aicw-data/aicw.io/data or AICW_DATA_FOLDER=/path/to/data
+  if (process.env.AICW_DATA_FOLDER) {
+    const customPath = process.env.AICW_DATA_FOLDER;
+    // Always use path.resolve() to normalize the path (handles both absolute and relative, removes ..)
+    const resolvedPath = path.resolve(customPath);
+
+    // Fail-fast: data folder MUST exist
+    if (!existsSync(resolvedPath)) {
+      console.error(`\n\x1b[31mFATAL ERROR: AICW_DATA_FOLDER path does not exist!\x1b[0m`);
+      console.error(`\x1b[33mExpected path: ${resolvedPath}\x1b[0m`);
+      console.error(`\x1b[36mPlease create this directory or update AICW_DATA_FOLDER.\x1b[0m\n`);
+      process.exit(1);
+    }
+
+    if (process.env.AICW_DEV_MODE === 'true') {
+      console.log(`AICW_DATA_FOLDER: ${resolvedPath}`);
+    }
+    return resolvedPath;
+  }
+
+  // Platform-specific defaults (no user subfolder, just ~/...Support/aicw/)
   const homeDir = homedir();
   const plat = platform();
-
-  let outputPath = null;
-  const userSubfolder = path.join('aicw', process.env.AICW_USER_NAME || DEFAULT_AICW_USER_NAME) + '/data';
-  // so folder is like "/Users/USERNAME/Library/Application Support/aicw/default-user/data/"
-
+  let outputPath: string;
 
   switch (plat) {
     case 'win32':
-      // Windows: Use %APPDATA%/{userSubfolder} or fallback to home directory
-      outputPath = process.env.APPDATA 
-        ? path.join(process.env.APPDATA, userSubfolder)
-        : path.join(homeDir, 'AppData', 'Roaming', userSubfolder);
+      // Windows: Use %APPDATA%/aicw or fallback to home directory
+      outputPath = process.env.APPDATA
+        ? path.join(process.env.APPDATA, 'aicw')
+        : path.join(homeDir, 'AppData', 'Roaming', 'aicw');
       break;
 
     case 'darwin':
-      // macOS: Use ~/Library/Application Support/{userSubfolder}
-      outputPath = path.join(homeDir, 'Library', 'Application Support', userSubfolder);
+      // macOS: Use ~/Library/Application Support/aicw
+      outputPath = path.join(homeDir, 'Library', 'Application Support', 'aicw');
       break;
-    
+
     default:
-      // Linux and others: Use ~/.config/{userSubfolder} (XDG Base Directory)
-      outputPath = process.env.XDG_CONFIG_HOME 
-        ? path.join(process.env.XDG_CONFIG_HOME, userSubfolder)
-        : path.join(homeDir, '.config', userSubfolder);
+      // Linux and others: Use ~/.config/aicw (XDG Base Directory)
+      outputPath = process.env.XDG_CONFIG_HOME
+        ? path.join(process.env.XDG_CONFIG_HOME, 'aicw')
+        : path.join(homeDir, '.config', 'aicw');
       break;
   }
 
   if (process.env.AICW_DEV_MODE === 'true') {
-    console.log(`AICW_DEV_MODE is true, user path: ${outputPath}`);
+    console.log(`AICW_DEV_MODE is true, data path: ${outputPath}`);
   }
-
- if(outputPath === null) {
-  throw new Error('Output path for user data is null');
-  process.exit(1);
- }
 
   return outputPath;
 }
@@ -127,6 +134,13 @@ export function getUserProjectDir(projectName: string): string {
   return projectPath;
 }
 
+/**
+ * Normalize a website URL into a simple domain name for directory naming
+ * Examples:
+ *   https://www.aicw.io -> aicw.io
+ *   http://example.com/path -> example.com
+ *   www.test.org -> test.org
+ */
 export function getUserProjectQuestionsFile(projectName: string): string {
   return path.join(getUserProjectDir(projectName), QUESTIONS_FILE_NAME);
 }
@@ -155,8 +169,8 @@ export function getUserProjectReportsDir(projectName: string): string {
   return path.join(getUserProjectDir(projectName), 'reports');
 }
 
-export function getUserProjectOutputDir(projectName: string, date: string): string {
-  return path.join(USER_REPORTS_DIR, 'projects', projectName, date);
+export function getUserProjectOutputDir(projectName: string): string {
+  return path.join(USER_REPORTS_DIR, projectName);
 }
 
 // Question-specific paths
@@ -195,8 +209,8 @@ export function getProjectDisplayPath(projectName: string): string {
 }
 
 export function getReportsDisplayPath(projectName: string): string {
-  // Get the base OUTPUT directory (without date)
-  const reportsPath = path.join(USER_REPORTS_DIR, 'projects', projectName);
+  // Get the base OUTPUT directory
+  const reportsPath = path.join(USER_REPORTS_DIR, projectName);
   const home = homedir();
   return reportsPath.startsWith(home)
     ? reportsPath.replace(home, '~')
@@ -205,7 +219,7 @@ export function getReportsDisplayPath(projectName: string): string {
 
 export function getActualReportsPath(projectName: string): string {
   // Get the actual full path for OUTPUT directory
-  return path.join(USER_REPORTS_DIR, 'projects', projectName);
+  return path.join(USER_REPORTS_DIR, projectName);
 }
 
 // Initialize user directories (creates them if they don't exist)
@@ -260,8 +274,7 @@ export function isDevMode(): boolean {
 
 // Get package root directory (for accessing bundled resources)
 export function getPackageRoot(): string {
-  // In dev: /Users/.../aicw/dist/config -> /Users/.../aicw
-  // In npm: /usr/local/lib/node_modules/aicw/dist/config -> /usr/local/lib/node_modules/aicw
+  // Move from dist/config back to the package root in both dev and npm installs.
   return path.join(__dirname, '..', '..');
 }
 

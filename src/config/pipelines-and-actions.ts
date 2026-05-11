@@ -8,7 +8,7 @@ export interface AppAction {
   /** Unique identifier */
   id: string;
 
-  /** Script path relative to dist/ (without .js). Example: 'prepare-folders' or 'ee/enrich-calculate-influence' */
+  /** Script path relative to dist/ (without .js). Example: 'actions/project-new' */
   cmd: string;
 
   /** Human-readable name */
@@ -94,7 +94,6 @@ const rawPipelines = loadPipelinesConfigJson().pipelines as PipelineDefinition[]
 // Convert raw pipeline configs to PipelineDefinition with actions
 const builtPipelines: PipelineDefinition[] = rawPipelines.map(pipeline => ({
   ...pipeline,
-  // Filter actions that belong to this pipeline
   actions: APP_ACTIONS.filter(action => action.pipelines.includes(pipeline.id))
 }));
 
@@ -226,7 +225,7 @@ export function getCliMenuItems(showAdvanced: boolean = false): CliMenuItem[] {
       description: pipeline.description,
       cliCommand: pipeline.id!,
       category: pipeline.category,
-      requiresProject: true, // Pipelines always require project
+      requiresProject: pipeline.category === 'project',
       nextPipeline: pipeline.nextPipeline,
       type: pipeline.type,
       menuItemId: pipeline.menuItemId,

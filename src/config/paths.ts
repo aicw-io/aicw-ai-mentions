@@ -35,10 +35,6 @@ export const USER_CONFIG_CREDENTIALS_FILE: string = path.join(USER_CONFIG_CREDEN
 export const REPORT_TEMPLATES_DIR: string = path.join(TEMPLATES_DIR, 'report');
 export const NAVIGATION_TEMPLATES_DIR: string = path.join(TEMPLATES_DIR, 'navigation');
 
-
-export const ENRICH_GENERATE_SUMMARY_PROMPT_PATH: string = path.join(PROMPTS_DIR, 'enrich-generate-summary.md');
-export const ENRICH_GENERATE_SUMMARY_AGGREGATE_PROMPT_PATH: string = path.join(PROMPTS_DIR, 'enrich-generate-summary-aggregate.md');
-
 // Report template paths
 export const EXTRACT_ENTITIES_PROMPT_TEMPLATE_PATH: string = path.join(PROMPTS_DIR, 'extract-entities.md');
 export const SINGLE_ANSWER_TEMPLATE_PATH: string = path.join(PROMPTS_DIR, 'shared', 'single-answer.md');
@@ -57,7 +53,7 @@ export const QUESTIONS_DIR = (project: string): string => getUserProjectQuestion
 export const GET_ANSWERS_DIR_FOR_QUESTION = (project: string, question: string): string => getUserProjectAnswersDirForQuestion(project, question);  
 export const CAPTURE_DIR = (project: string): string => getUserProjectQuestionsDir(project);
 export const REPORT_DIR = (project: string): string => getUserProjectReportsDir(project);
-export const OUTPUT_DIR = (project: string, date: string): string => getUserProjectOutputDir(project, date);
+export const OUTPUT_DIR = (project: string): string => getUserProjectOutputDir(project);
 export const PROJECT_REPORTS_DIR = (project: string, date: string): string => path.join(getUserProjectReportsDir(project), date);
 export const REPORTS_BY_DATE_DIR = (date: string): string => path.join(USER_DATA_DIR, 'reports', date);
 

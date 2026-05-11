@@ -21,7 +21,7 @@ const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 
 /**
  * Calculate influence statistics for linkDomains
- * Adapted from linkTypes influence calculation
+ * Calculates influence statistics for source domains.
  */
 function calculateInfluenceForLinkDomains(linkDomains: any[]): void {
   logger.debug('Calculating influence for linkDomains');
