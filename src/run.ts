@@ -116,6 +116,7 @@ async function printHelp(): Promise<void> {
   output.writeLine(colorize('Common commands:\n', 'yellow'));
   output.writeLine(`  ${colorize('aicw-ai-mentions scan "Stripe"', 'bright')} - create and run a perception scan`);
   output.writeLine(`  ${colorize('aicw-ai-mentions serve', 'bright')} - open the local reports server`);
+  output.writeLine(`  ${colorize('aicw-ai-mentions mcp', 'bright')} - start the local MCP server over stdio`);
   output.writeLine('');
 
   const allPipelines = getCliMenuItems(false);
@@ -505,6 +506,14 @@ async function main(): Promise<void> {
 
   const [command, projectArg, ...args]: string[] = allArgs;
   let project = projectArg;
+
+  // Start MCP before normal CLI output/env loading so stdio transport remains
+  // clean JSON-RPC for MCP clients.
+  if (command === 'mcp' || command === 'mcp-server') {
+    const { startMcpServer } = await import('./mcp-server.js');
+    await startMcpServer([projectArg, ...args].filter((arg): arg is string => Boolean(arg)));
+    return;
+  }
 
   // Show interactive menu if no command or --advanced flag only
   if (!command || command === '--advanced') {
