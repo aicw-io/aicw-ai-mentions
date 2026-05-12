@@ -1,6 +1,8 @@
 export interface ProjectNewArgs {
   topic?: string;
   questionCount?: number;
+  templatePath?: string;
+  templateText?: string;
 }
 
 export function parseProjectNewArgs(args: string[]): ProjectNewArgs {
@@ -21,6 +23,39 @@ export function parseProjectNewArgs(args: string[]): ProjectNewArgs {
 
     if (arg.startsWith('--questions=')) {
       result.questionCount = Number.parseInt(arg.slice('--questions='.length), 10);
+      continue;
+    }
+
+    if (arg === '--template' || arg === '-t') {
+      const templatePath = args[i + 1];
+      if (templatePath) {
+        result.templatePath = templatePath;
+        i++;
+      }
+      continue;
+    }
+
+    if (arg.startsWith('--template=')) {
+      result.templatePath = arg.slice('--template='.length);
+      continue;
+    }
+
+    if (arg === '--template-text' || arg === '--template-inline') {
+      const templateText = args[i + 1];
+      if (templateText !== undefined) {
+        result.templateText = templateText;
+        i++;
+      }
+      continue;
+    }
+
+    if (arg.startsWith('--template-text=')) {
+      result.templateText = arg.slice('--template-text='.length);
+      continue;
+    }
+
+    if (arg.startsWith('--template-inline=')) {
+      result.templateText = arg.slice('--template-inline='.length);
       continue;
     }
 
