@@ -25,12 +25,32 @@ test('parses noninteractive scan subject and question count', () => {
     topic: 'Stripe',
     questionCount: 3
   });
+  assert.deepEqual(parseProjectNewArgs(['Stripe', '--template', './questions.md']), {
+    topic: 'Stripe',
+    templatePath: './questions.md'
+  });
+  assert.deepEqual(parseProjectNewArgs(['Stripe', '--template=./questions.md']), {
+    topic: 'Stripe',
+    templatePath: './questions.md'
+  });
+  assert.deepEqual(parseProjectNewArgs(['Stripe', '--template-text', 'Who cites {{SUBJECT}}?']), {
+    topic: 'Stripe',
+    templateText: 'Who cites {{SUBJECT}}?'
+  });
+  assert.deepEqual(parseProjectNewArgs(['Stripe', '--template-text=Who cites {{SUBJECT}}?']), {
+    topic: 'Stripe',
+    templateText: 'Who cites {{SUBJECT}}?'
+  });
+  assert.deepEqual(parseProjectNewArgs(['Stripe', '--template-inline=Who cites {{SUBJECT}}?']), {
+    topic: 'Stripe',
+    templateText: 'Who cites {{SUBJECT}}?'
+  });
 });
 
 test('validates requested question count', () => {
-  assert.equal(resolveQuestionCount(undefined, 3, 3), 3);
-  assert.equal(resolveQuestionCount(1, 3, 3), 1);
-  assert.throws(() => resolveQuestionCount(4, 3, 3), /between 1 and 3/);
+  assert.equal(resolveQuestionCount(undefined, 5, 5), 5);
+  assert.equal(resolveQuestionCount(4, 5, 5), 4);
+  assert.throws(() => resolveQuestionCount(6, 5, 5), /between 1 and 5/);
 });
 
 test('npm package is unscoped and exposes the public binary', () => {

@@ -9,7 +9,9 @@ It asks multiple AI models the same questions, extracts mentions and cited links
 - link domains
 - model filters, search, and CSV export
 
-Live demo: https://aicw.io/aicw-ai-mentions-demo/
+## Video Demo
+
+https://github.com/user-attachments/assets/4e334850-e496-40fd-9204-dc37fb534489
 
 ## Screenshots
 
@@ -25,13 +27,17 @@ Live demo: https://aicw.io/aicw-ai-mentions-demo/
 
 ![AICW AI Mentions report showing link domains](docs/imgs/link-domains.png)
 
+### Live Demo report
+
+[Explore live demo report for "Y Combinator" term](https://aicw.io/demo/aicw-ai-mentions/)
+
 ## Install
 
 Run without a global install:
 
 ```bash
 npx aicw-ai-mentions@latest setup-api-key
-npx aicw-ai-mentions@latest scan "Stripe"
+npx aicw-ai-mentions@latest scan "Y Combinator"
 npx aicw-ai-mentions@latest serve
 ```
 
@@ -40,11 +46,25 @@ Or install globally:
 ```bash
 npm install -g aicw-ai-mentions
 aicw-ai-mentions setup-api-key
-aicw-ai-mentions scan "Stripe"
+aicw-ai-mentions scan "Y Combinator"
 aicw-ai-mentions serve
 ```
 
 Then open the local report URL printed by `serve`.
+
+By default, `scan` runs every question from the built-in [default question template](src/config/data/templates/questions/default.md). You can also pass your own line-based Markdown template file:
+
+```bash
+aicw-ai-mentions scan "Y Combinator" --template ./questions.md
+```
+
+Or pass a template string directly:
+
+```bash
+aicw-ai-mentions scan "Y Combinator" --template-text "Who mentions {{SUBJECT}}?\\nWhich links cite {{SUBJECT}}?"
+```
+
+Each non-empty, non-comment line is treated as one question; `-`, `*`, and numbered list prefixes are accepted. Use `{{SUBJECT}}` where the scan subject should appear. By default, every question in the template runs; use `--questions 2` only when you intentionally want the first two questions.
 
 ## Requirements
 
@@ -65,30 +85,26 @@ aicw-ai-mentions setup-api-key
 
 `setup-api-key` stores the key in your local AICW data folder. You can also put `OPENROUTER_API_KEY` in `.env.local` or `.env`.
 
-## Build The Demo
+## Example Scan
 
-From a local checkout:
-
-```bash
-npm install
-OPENROUTER_API_KEY=sk-or-... npm run demo:build
-```
-
-The demo runs:
+The package does not ship a generated demo report. To create your own local report, run:
 
 ```bash
-aicw-ai-mentions scan "AICW AI Mentions" --questions 1
+aicw-ai-mentions scan "Y Combinator"
+aicw-ai-mentions serve
 ```
 
-and writes a static report to:
-
-```text
-demo/core/index.html
-```
+`scan` stores local project data and generated reports in your AICW data folder. `serve` prints the local report URL.
 
 ## Local Data
 
 Reports, logs, cache files, and saved credentials stay on your machine.
+
+To print the exact data folder on your machine:
+
+```bash
+aicw-ai-mentions show-user-data-location
+```
 
 Default data folders:
 
@@ -115,6 +131,8 @@ npm run demo:build
 npm run package:dry
 node bin/aicw-ai-mentions.js help
 ```
+
+`npm run demo:build` is a maintainer helper. It writes generated demo output to `.demo-data/`, which is local-only and not included in the npm package.
 
 ## License
 

@@ -5,10 +5,9 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SUBJECT="${AICW_DEMO_SUBJECT:-AICW AI Mentions}"
-QUESTIONS="${AICW_DEMO_QUESTIONS:-1}"
-OUTPUT_DIR="${AICW_DEMO_OUTPUT_DIR:-${AICW_DEMO_DOCS_DIR:-$ROOT_DIR/demo/core}}"
-DATA_DIR="${AICW_DEMO_DATA_DIR:-$OUTPUT_DIR/data}"
+SUBJECT="${AICW_DEMO_SUBJECT:-Y Combinator}"
+OUTPUT_DIR="${AICW_DEMO_OUTPUT_DIR:-${AICW_DEMO_DOCS_DIR:-$ROOT_DIR/.demo-data/report}}"
+DATA_DIR="${AICW_DEMO_DATA_DIR:-$ROOT_DIR/.demo-data/data}"
 
 if [ -z "$OUTPUT_DIR" ] || [ "$OUTPUT_DIR" = "/" ]; then
   echo "Refusing to write to OUTPUT_DIR=$OUTPUT_DIR" >&2
@@ -30,17 +29,13 @@ cd "$ROOT_DIR"
 echo "Building aicw-ai-mentions..."
 npm run build
 
-if [ "${AICW_DEMO_KEEP_DATA:-false}" != "true" ]; then
-  echo "Resetting demo output folder: $OUTPUT_DIR"
-  rm -rf "$OUTPUT_DIR"
-fi
 mkdir -p "$DATA_DIR"
 
 echo "Running demo scan for: $SUBJECT"
 env \
   AICW_DATA_FOLDER="$DATA_DIR" \
   AICW_SKIP_UPDATE_CHECK=true \
-  node "$ROOT_DIR/bin/aicw-ai-mentions.js" scan "$SUBJECT" --questions "$QUESTIONS"
+  node "$ROOT_DIR/bin/aicw-ai-mentions.js" scan "$SUBJECT"
 
 REPORT_DIR="$DATA_DIR/reports/$SUBJECT"
 if [ ! -f "$REPORT_DIR/index.html" ]; then
@@ -61,8 +56,16 @@ fi
 
 echo "Publishing report to: $OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"
-find "$OUTPUT_DIR" -mindepth 1 -maxdepth 1 ! -name data -exec rm -rf {} +
-cp -R "$REPORT_DIR"/. "$OUTPUT_DIR"/
+REPORT_DIR="$(cd "$REPORT_DIR" && pwd -P)"
+OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd -P)"
+
+if [ "$REPORT_DIR" != "$OUTPUT_DIR" ]; then
+  if [ "${AICW_DEMO_KEEP_DATA:-false}" != "true" ]; then
+    echo "Resetting demo output folder: $OUTPUT_DIR"
+    find "$OUTPUT_DIR" -mindepth 1 -maxdepth 1 ! -name data -exec rm -rf {} +
+  fi
+  cp -R "$REPORT_DIR"/. "$OUTPUT_DIR"/
+fi
 rm -rf "$DATA_DIR/logs" "$DATA_DIR/cache"
 touch "$OUTPUT_DIR/.nojekyll"
 

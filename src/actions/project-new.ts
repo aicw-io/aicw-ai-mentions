@@ -13,9 +13,6 @@ import { parseProjectNewArgs, resolveQuestionCount } from './project-new-args.js
 
 const CURRENT_MODULE_NAME = getModuleNameFromUrl(import.meta.url);
 
-// Default configuration
-const DEFAULT_QUESTION_COUNT = 3;
-const MAX_QUESTIONS = 3;
 const DEFAULT_AI_PRESET = 'ai_chats_with_search';
 const DEFAULT_TEMPLATE_NAME = 'default.md';
 
@@ -25,6 +22,11 @@ interface ProjectSetupConfig {
   description: string;
   questions: string[];
   ai_preset: string;
+}
+
+interface QuestionTemplateOptions {
+  templatePath?: string;
+  templateText?: string;
 }
 
 // ============================================================================
@@ -70,31 +72,57 @@ function toTitleCase(str: string): string {
     .join(' ');
 }
 
+function parseQuestionTemplate(content: string, templatePath: string): string[] {
+  const questions = content
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line && !line.startsWith('#'))
+    .map(line => line.replace(/^[-*]\s+/, '').replace(/^\d+[.)]\s+/, '').trim())
+    .filter(Boolean);
+
+  if (questions.length === 0) {
+    throw new PipelineCriticalError(
+      `No questions found in template: ${templatePath}`,
+      CURRENT_MODULE_NAME
+    );
+  }
+
+  return questions;
+}
+
 /**
- * Load the default question template
+ * Load a question template.
  */
-async function loadDefaultTemplate(): Promise<string[]> {
-  const templatePath = join(USER_QUESTION_TEMPLATES_DIR, DEFAULT_TEMPLATE_NAME);
+async function loadQuestionTemplate(options: QuestionTemplateOptions): Promise<{ questions: string[]; source: string }> {
+  if (options.templatePath && options.templateText !== undefined) {
+    throw new PipelineCriticalError(
+      'Use either --template or --template-text, not both.',
+      CURRENT_MODULE_NAME
+    );
+  }
+
+  if (options.templateText !== undefined) {
+    const source = '--template-text';
+    const content = options.templateText.replace(/\\n/g, '\n');
+    return {
+      questions: parseQuestionTemplate(content, source),
+      source
+    };
+  }
+
+  const templatePath = options.templatePath;
+  const source = templatePath ? path.resolve(templatePath) : join(USER_QUESTION_TEMPLATES_DIR, DEFAULT_TEMPLATE_NAME);
 
   try {
-    const content = await fs.readFile(templatePath, 'utf-8');
-    const lines = content.split('\n').filter(line => line.trim());
-
-    // Filter out comment lines (starting with #)
-    const questions = lines.filter(line => !line.trim().startsWith('#'));
-
-    if (questions.length === 0) {
-      throw new PipelineCriticalError(
-        `No questions found in default template: ${templatePath}`,
-        CURRENT_MODULE_NAME
-      );
-    }
-
-    return questions;
+    const content = await fs.readFile(source, 'utf-8');
+    return {
+      questions: parseQuestionTemplate(content, source),
+      source
+    };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       throw new PipelineCriticalError(
-        `Default template not found: ${templatePath}`,
+        `Question template not found: ${source}`,
         CURRENT_MODULE_NAME
       );
     }
@@ -183,22 +211,22 @@ async function getTopicStep(): Promise<string> {
 /**
  * Step 2: Get question count from user
  */
-async function getQuestionCountStep(): Promise<number> {
+async function getQuestionCountStep(totalQuestions: number): Promise<number> {
   logger.log('\n' + colorize('Step 2: Number of Questions', 'bright'));
-  logger.log(colorize(`How many questions to generate? (1-${MAX_QUESTIONS})`, 'dim'));
+  logger.log(colorize(`How many questions to generate? (1-${totalQuestions})`, 'dim'));
 
   while (true) {
-    const input = await question(`\nNumber of questions [${DEFAULT_QUESTION_COUNT}]: `);
+    const input = await question(`\nNumber of questions [${totalQuestions}]: `);
 
     // Use default if empty
     if (!input) {
-      return DEFAULT_QUESTION_COUNT;
+      return totalQuestions;
     }
 
     const count = parseInt(input);
 
-    if (isNaN(count) || count < 1 || count > MAX_QUESTIONS) {
-      logger.error(`Please enter a number between 1 and ${MAX_QUESTIONS}.`);
+    if (isNaN(count) || count < 1 || count > totalQuestions) {
+      logger.error(`Please enter a number between 1 and ${totalQuestions}.`);
       continue;
     }
 
@@ -206,12 +234,9 @@ async function getQuestionCountStep(): Promise<number> {
   }
 }
 
-/**
- * Show preview of questions and get confirmation
- */
-async function showPreviewAndConfirm(displayName: string, questions: string[]): Promise<boolean> {
+function showQuestionPreview(displayName: string, questions: string[]): void {
   logger.log('\n' + colorize('─'.repeat(50), 'dim'));
-  logger.log(colorize(`📋 Preview: "${displayName}" with ${questions.length} questions:`, 'bright'));
+  logger.log(colorize(`📋 Questions for "${displayName}" (${questions.length}):`, 'bright'));
   logger.log('');
 
   questions.forEach((q, i) => {
@@ -219,7 +244,13 @@ async function showPreviewAndConfirm(displayName: string, questions: string[]): 
   });
 
   logger.log('\n' + colorize('─'.repeat(50), 'dim'));
+}
 
+/**
+ * Show preview of questions and get confirmation
+ */
+async function showPreviewAndConfirm(displayName: string, questions: string[]): Promise<boolean> {
+  showQuestionPreview(displayName, questions);
   return await confirmAction('\nCreate project?', true);
 }
 
@@ -240,12 +271,15 @@ async function main() {
     const topic = cliArgs.topic || await getTopicStep();
 
     // Step 2: Get question count
-    const questionCount = isSubjectProvided
-      ? resolveQuestionCount(cliArgs.questionCount, DEFAULT_QUESTION_COUNT, MAX_QUESTIONS)
-      : await getQuestionCountStep();
-
     // Load template and generate questions
-    const templateQuestions = await loadDefaultTemplate();
+    const template = await loadQuestionTemplate({
+      templatePath: cliArgs.templatePath,
+      templateText: cliArgs.templateText
+    });
+    const templateQuestions = template.questions;
+    const questionCount = isSubjectProvided
+      ? resolveQuestionCount(cliArgs.questionCount, templateQuestions.length, templateQuestions.length)
+      : await getQuestionCountStep(templateQuestions.length);
     const questions = templateQuestions
       .slice(0, questionCount)
       .map(q => q.replace(/{{SUBJECT}}/g, topic));
@@ -254,7 +288,10 @@ async function main() {
     const displayName = toTitleCase(topic);
     const projectName = await generateUniqueProjectName(topic);
 
-    // Show preview and confirm for interactive setup. CLI scan mode should run without prompts.
+    // Show the exact questions in CLI mode without prompting; interactive setup still confirms.
+    if (isSubjectProvided) {
+      showQuestionPreview(displayName, questions);
+    }
     const confirmed = isSubjectProvided ? true : await showPreviewAndConfirm(displayName, questions);
 
     if (!confirmed) {
@@ -275,7 +312,7 @@ async function main() {
       logger.success(`\n✓ Project "${displayName}" created successfully!`);
       logger.log(colorize(`  Saved to: ${getProjectDisplayPath(projectName)}`, 'dim'));
       if (isSubjectProvided) {
-        logger.log(colorize(`  Generated ${questions.length} default scan questions`, 'dim'));
+        logger.log(colorize(`  Generated ${questions.length} scan questions from ${template.source}`, 'dim'));
       }
 
       // Output marker for pipeline to capture

@@ -21,6 +21,8 @@ test('project-new creates a scan from a subject argument without prompts', () =>
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.match(result.stdout, /AICW_OUTPUT_STRING:Acme Corp/);
+    assert.match(result.stdout, /Questions for "Acme Corp" \(3\)/);
+    assert.match(result.stdout, /Which sources would you cite to verify important claims about Acme Corp/);
 
     const projectJson = JSON.parse(
       readFileSync(path.join(dataDir, 'projects', 'Acme Corp', 'project.json'), 'utf8')
@@ -34,7 +36,126 @@ test('project-new creates a scan from a subject argument without prompts', () =>
     assert.equal(projectJson.ai_preset, 'ai_chats_with_search');
     assert.match(projectJson.description, /LLM perception scan/);
     assert.match(questions, /What is Acme Corp known for today/);
-    assert.match(questions, /Which companies, products, people, websites, or sources/);
+    assert.match(questions, /Which sources would you cite to verify important claims about Acme Corp/);
+  } finally {
+    rmSync(dataDir, { recursive: true, force: true });
+  }
+});
+
+test('project-new accepts a custom question template file', () => {
+  const dataDir = mkdtempSync(path.join(process.cwd(), '.test-data-project-template-'));
+  const templatePath = path.join(dataDir, 'custom-questions.md');
+
+  try {
+    writeFileSync(
+      templatePath,
+      [
+        '# Custom questions',
+        '',
+        '- Who mentions {{SUBJECT}} and why?',
+        '2. Which sources cite {{SUBJECT}}?',
+        'What competitors appear near {{SUBJECT}}?'
+      ].join('\n')
+    );
+
+    const result = spawnSync(process.execPath, ['dist/actions/project-new.js', 'Acme Template', '--template', templatePath], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        AICW_DATA_FOLDER: dataDir,
+        AICW_INTERACTIVE_MODE: 'true',
+        AICW_PIPELINE_STEP: '1'
+      },
+      encoding: 'utf8'
+    });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /Generated 3 scan questions from/);
+
+    const questions = readFileSync(
+      path.join(dataDir, 'projects', 'Acme Template', 'questions.md'),
+      'utf8'
+    );
+
+    assert.match(questions, /Who mentions Acme Template and why/);
+    assert.match(questions, /Which sources cite Acme Template/);
+    assert.match(questions, /What competitors appear near Acme Template/);
+  } finally {
+    rmSync(dataDir, { recursive: true, force: true });
+  }
+});
+
+test('project-new accepts an inline question template string', () => {
+  const dataDir = mkdtempSync(path.join(process.cwd(), '.test-data-project-inline-template-'));
+
+  try {
+    const result = spawnSync(
+      process.execPath,
+      [
+        'dist/actions/project-new.js',
+        'Inline Subject',
+        '--template-text',
+        'Who mentions {{SUBJECT}}?\\n2. Which links cite {{SUBJECT}}?'
+      ],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          AICW_DATA_FOLDER: dataDir,
+          AICW_INTERACTIVE_MODE: 'true',
+          AICW_PIPELINE_STEP: '1'
+        },
+        encoding: 'utf8'
+      }
+    );
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /Generated 2 scan questions from --template-text/);
+
+    const questions = readFileSync(
+      path.join(dataDir, 'projects', 'Inline Subject', 'questions.md'),
+      'utf8'
+    );
+
+    assert.match(questions, /Who mentions Inline Subject/);
+    assert.match(questions, /Which links cite Inline Subject/);
+  } finally {
+    rmSync(dataDir, { recursive: true, force: true });
+  }
+});
+
+test('project-new rejects using a template file and inline template together', () => {
+  const dataDir = mkdtempSync(path.join(process.cwd(), '.test-data-project-template-conflict-'));
+  const templatePath = path.join(dataDir, 'custom-questions.md');
+
+  try {
+    writeFileSync(templatePath, 'Who mentions {{SUBJECT}}?');
+
+    const result = spawnSync(
+      process.execPath,
+      [
+        'dist/actions/project-new.js',
+        'Template Conflict',
+        '--template',
+        templatePath,
+        '--template-text',
+        'Which links cite {{SUBJECT}}?'
+      ],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          AICW_DATA_FOLDER: dataDir,
+          AICW_INTERACTIVE_MODE: 'true',
+          AICW_PIPELINE_STEP: '1'
+        },
+        encoding: 'utf8'
+      }
+    );
+
+    const output = `${result.stdout}\n${result.stderr}`;
+    assert.notEqual(result.status, 0, output);
+    assert.match(output, /Use either --template or --template-text/);
   } finally {
     rmSync(dataDir, { recursive: true, force: true });
   }

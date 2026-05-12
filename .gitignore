@@ -150,9 +150,4 @@ vite.config.ts.timestamp-*
 .tmp/
 *.tgz
 
-# Demo data that can include local paths or raw provider cache payloads.
-demo/core/data/cache/
-demo/core/data/logs/
-demo/core/demo/
-
 .playwright-mcp/
