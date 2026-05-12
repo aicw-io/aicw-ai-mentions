@@ -65,6 +65,7 @@ test('npm package is unscoped and exposes the public binary', () => {
   assert.deepEqual(packageJson.bin, {
     'aicw-ai-mentions': './bin/aicw-ai-mentions.js'
   });
+  assert.ok(packageJson.files.includes('skills/'));
 });
 
 test('link verification is optional and not part of default build pipelines', () => {

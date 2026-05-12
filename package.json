@@ -1,6 +1,6 @@
 {
   "name": "aicw-ai-mentions",
-  "version": "1.2.1",
+  "version": "1.2.3",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
@@ -14,6 +14,7 @@
     "bin/",
     "docs/",
     "dist/",
+    "skills/",
     "README.md",
     "LICENSE"
   ],
@@ -67,11 +68,13 @@
   "author": "Evgenii Mironichev",
   "license": "AGPL-3.0-only",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "csv-parse": "^5.5.0",
     "dotenv": "^16.4.7",
     "fs-extra": "^11.2.0",
     "marked": "^16.0.0",
-    "openai": "^4.21.0"
+    "openai": "^4.21.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^20.19.24",
